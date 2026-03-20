@@ -1,33 +1,3 @@
-Great question—and this is where a lot of projects stumble.
-
-Your README content is **good**, but right now it’s doing *too many jobs at once*:
-
-* landing page
-* documentation
-* technical explanation
-* limitations disclaimer
-
-That can make it feel a bit dense when someone first lands on the repo.
-
----
-
-# What I recommend (high impact change)
-
-👉 Keep everything you wrote
-👉 But **restructure the README for flow and scanning**
-
-Think:
-
-> **Hook → Why → What → Status → Details**
-
----
-
-# 🔧 Improved README structure
-
-Here’s a **clean, GitHub-optimized version** using your content, but arranged for readability and impact.
-
----
-
 # Adventure Engine
 
 > A schema-driven, AI-friendly engine for building classic point-and-click adventure games quickly and iteratively.
