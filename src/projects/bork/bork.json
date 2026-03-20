@@ -1,0 +1,2155 @@
+{
+  "title": "Bork",
+  "startingRoom": "farmyard",
+  "defaultPlayerActorId": "russ_toire",
+  "defaultPlayerPosition": {
+    "x": 320,
+    "y": 306
+  },
+  "startingItems": [],
+  "verbs": [
+    "walk",
+    "look",
+    "open",
+    "close",
+    "pickup",
+    "use",
+    "talk",
+    "push",
+    "pull",
+    "give"
+  ],
+  "rooms": [
+    {
+      "id": "farmyard",
+      "name": "Farmyard",
+      "backgroundPath": "bork_bg_farmyard",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_windmill_hill",
+          "direction": "N",
+          "bounds": {
+            "x": 240,
+            "y": 0,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "windmill_hill",
+          "targetSpawnPointId": "from_farmyard",
+          "label": "Windmill Hill"
+        },
+        {
+          "id": "to_chicken_coop",
+          "direction": "W",
+          "bounds": {
+            "x": 0,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "chicken_coop",
+          "targetSpawnPointId": "from_farmyard",
+          "label": "Chicken Coop"
+        },
+        {
+          "id": "to_vegetable_garden",
+          "direction": "E",
+          "bounds": {
+            "x": 608,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "vegetable_garden",
+          "targetSpawnPointId": "from_farmyard",
+          "label": "Vegetable Garden"
+        },
+        {
+          "id": "to_barn",
+          "direction": "S",
+          "bounds": {
+            "x": 240,
+            "y": 324,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "barn",
+          "targetSpawnPointId": "from_farmyard",
+          "label": "Barn"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "S"
+        },
+        {
+          "id": "from_windmill_hill",
+          "x": 320,
+          "y": 270,
+          "facing": "S"
+        },
+        {
+          "id": "from_chicken_coop",
+          "x": 72,
+          "y": 306,
+          "facing": "E"
+        },
+        {
+          "id": "from_vegetable_garden",
+          "x": 568,
+          "y": 306,
+          "facing": "W"
+        },
+        {
+          "id": "from_barn",
+          "x": 320,
+          "y": 324,
+          "facing": "N"
+        }
+      ],
+      "objectIds": [
+        "scarecrow",
+        "cult_bucket"
+      ],
+      "actorIds": [
+        "old_hen",
+        "duck"
+      ],
+      "onEnter": "enter_farmyard",
+      "effects": [
+        {
+          "id": "farmyard_sun_glow",
+          "type": "glow",
+          "layer": "background",
+          "x": 200,
+          "y": 18,
+          "width": 240,
+          "height": 108,
+          "color": "#ffe08a",
+          "intensity": 0.4,
+          "speed": 0.4,
+          "seed": 0,
+          "visible": true
+        },
+        {
+          "id": "farmyard_dust",
+          "type": "dust",
+          "layer": "background",
+          "x": 0,
+          "y": 216,
+          "width": 640,
+          "height": 144,
+          "color": "rgba(210,200,180,0.5)",
+          "intensity": 0.35,
+          "speed": 0.6,
+          "seed": 7,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "barn",
+      "name": "Barn",
+      "backgroundPath": "bork_bg_barn",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "floor",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_farmyard",
+          "direction": "N",
+          "bounds": {
+            "x": 240,
+            "y": 0,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "farmyard",
+          "targetSpawnPointId": "from_barn",
+          "label": "Farmyard"
+        },
+        {
+          "id": "to_hay_field",
+          "direction": "S",
+          "bounds": {
+            "x": 240,
+            "y": 324,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "hay_field",
+          "targetSpawnPointId": "from_barn",
+          "label": "Hay Field"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "N"
+        },
+        {
+          "id": "from_farmyard",
+          "x": 320,
+          "y": 270,
+          "facing": "S"
+        },
+        {
+          "id": "from_hay_field",
+          "x": 320,
+          "y": 324,
+          "facing": "N"
+        }
+      ],
+      "objectIds": [
+        "hay_pile",
+        "barn_tools"
+      ],
+      "actorIds": [
+        "goat"
+      ],
+      "effects": [
+        {
+          "id": "barn_light_dust",
+          "type": "dust",
+          "layer": "background",
+          "x": 120,
+          "y": 0,
+          "width": 400,
+          "height": 315,
+          "color": "rgba(210,200,160,0.7)",
+          "intensity": 0.55,
+          "speed": 0.5,
+          "seed": 3,
+          "visible": true
+        },
+        {
+          "id": "barn_lantern_glow",
+          "type": "glow",
+          "layer": "background",
+          "x": 288,
+          "y": 162,
+          "width": 64,
+          "height": 72,
+          "color": "#ff9a00",
+          "intensity": 0.6,
+          "speed": 0.7,
+          "seed": 12,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "hay_field",
+      "name": "Hay Field",
+      "backgroundPath": "bork_bg_hay_field",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_barn",
+          "direction": "N",
+          "bounds": {
+            "x": 240,
+            "y": 0,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "barn",
+          "targetSpawnPointId": "from_hay_field",
+          "label": "Barn"
+        },
+        {
+          "id": "to_windmill_hill",
+          "direction": "E",
+          "bounds": {
+            "x": 608,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "windmill_hill",
+          "targetSpawnPointId": "from_hay_field",
+          "label": "Windmill Hill"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "E"
+        },
+        {
+          "id": "from_barn",
+          "x": 320,
+          "y": 270,
+          "facing": "S"
+        },
+        {
+          "id": "from_windmill_hill",
+          "x": 568,
+          "y": 306,
+          "facing": "W"
+        }
+      ],
+      "objectIds": [
+        "hay_bale",
+        "fence_post"
+      ],
+      "actorIds": [],
+      "effects": [
+        {
+          "id": "hayfield_sun_sparkle",
+          "type": "sparkle",
+          "layer": "background",
+          "x": 0,
+          "y": 180,
+          "width": 640,
+          "height": 162,
+          "color": "rgba(255,240,150,0.9)",
+          "intensity": 0.4,
+          "speed": 0.8,
+          "seed": 5,
+          "visible": true
+        },
+        {
+          "id": "hayfield_chaff",
+          "type": "dust",
+          "layer": "foreground",
+          "x": 0,
+          "y": 198,
+          "width": 640,
+          "height": 162,
+          "color": "rgba(220,200,140,0.6)",
+          "intensity": 0.3,
+          "speed": 1.2,
+          "seed": 42,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "windmill_hill",
+      "name": "Windmill Hill",
+      "backgroundPath": "bork_bg_windmill_hill",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_farmyard",
+          "direction": "S",
+          "bounds": {
+            "x": 240,
+            "y": 324,
+            "width": 160,
+            "height": 36
+          },
+          "targetRoomId": "farmyard",
+          "targetSpawnPointId": "from_windmill_hill",
+          "label": "Farmyard"
+        },
+        {
+          "id": "to_hay_field",
+          "direction": "W",
+          "bounds": {
+            "x": 0,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "hay_field",
+          "targetSpawnPointId": "from_windmill_hill",
+          "label": "Hay Field"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "S"
+        },
+        {
+          "id": "from_farmyard",
+          "x": 320,
+          "y": 324,
+          "facing": "N"
+        },
+        {
+          "id": "from_hay_field",
+          "x": 72,
+          "y": 306,
+          "facing": "E"
+        }
+      ],
+      "objectIds": [
+        "windmill",
+        "windmill_ladder"
+      ],
+      "actorIds": [],
+      "effects": [
+        {
+          "id": "windmill_ground_fog",
+          "type": "fog",
+          "layer": "background",
+          "x": 0,
+          "y": 270,
+          "width": 640,
+          "height": 90,
+          "color": "rgba(180,200,230,0.7)",
+          "intensity": 0.5,
+          "speed": 0.8,
+          "seed": 1,
+          "visible": true
+        },
+        {
+          "id": "windmill_hillside_sparkle",
+          "type": "sparkle",
+          "layer": "background",
+          "x": 0,
+          "y": 162,
+          "width": 640,
+          "height": 108,
+          "color": "rgba(200,240,180,0.8)",
+          "intensity": 0.25,
+          "speed": 0.6,
+          "seed": 9,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "chicken_coop",
+      "name": "Chicken Coop",
+      "backgroundPath": "bork_bg_chicken_coop",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_farmyard",
+          "direction": "E",
+          "bounds": {
+            "x": 608,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "farmyard",
+          "targetSpawnPointId": "from_chicken_coop",
+          "label": "Farmyard"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "E"
+        },
+        {
+          "id": "from_farmyard",
+          "x": 568,
+          "y": 306,
+          "facing": "W"
+        }
+      ],
+      "objectIds": [
+        "nest_boxes",
+        "feather_pile"
+      ],
+      "actorIds": [
+        "hens"
+      ],
+      "effects": [
+        {
+          "id": "coop_slat_sparkle",
+          "type": "sparkle",
+          "layer": "background",
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 270,
+          "color": "rgba(255,240,200,0.8)",
+          "intensity": 0.3,
+          "speed": 0.3,
+          "seed": 2,
+          "visible": true
+        },
+        {
+          "id": "coop_feather_dust",
+          "type": "dust",
+          "layer": "background",
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 360,
+          "color": "rgba(255,250,240,0.5)",
+          "intensity": 0.45,
+          "speed": 0.4,
+          "seed": 18,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "vegetable_garden",
+      "name": "Vegetable Garden",
+      "backgroundPath": "bork_bg_vegetable_garden",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_farmyard",
+          "direction": "W",
+          "bounds": {
+            "x": 0,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "farmyard",
+          "targetSpawnPointId": "from_vegetable_garden",
+          "label": "Farmyard"
+        },
+        {
+          "id": "to_farmhouse_porch",
+          "direction": "E",
+          "bounds": {
+            "x": 608,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "farmhouse_porch",
+          "targetSpawnPointId": "from_vegetable_garden",
+          "label": "Farmhouse Porch"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "E"
+        },
+        {
+          "id": "from_farmyard",
+          "x": 72,
+          "y": 306,
+          "facing": "E"
+        },
+        {
+          "id": "from_farmhouse_porch",
+          "x": 568,
+          "y": 306,
+          "facing": "W"
+        }
+      ],
+      "objectIds": [
+        "garden_rows",
+        "watering_can"
+      ],
+      "actorIds": [
+        "rabbit"
+      ],
+      "effects": [
+        {
+          "id": "garden_dew_sparkle",
+          "type": "sparkle",
+          "layer": "background",
+          "x": 0,
+          "y": 108,
+          "width": 640,
+          "height": 180,
+          "color": "rgba(200,255,200,0.8)",
+          "intensity": 0.3,
+          "speed": 0.5,
+          "seed": 6,
+          "visible": true
+        },
+        {
+          "id": "garden_morning_glow",
+          "type": "glow",
+          "layer": "background",
+          "x": 0,
+          "y": 45,
+          "width": 160,
+          "height": 180,
+          "color": "#ffe8a0",
+          "intensity": 0.3,
+          "speed": 0.3,
+          "seed": 4,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "farmhouse_porch",
+      "name": "Farmhouse Porch",
+      "backgroundPath": "bork_bg_farmhouse_porch",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {
+              "x": 24,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 252
+            },
+            {
+              "x": 616,
+              "y": 356
+            },
+            {
+              "x": 24,
+              "y": 356
+            }
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_vegetable_garden",
+          "direction": "W",
+          "bounds": {
+            "x": 0,
+            "y": 225,
+            "width": 32,
+            "height": 135
+          },
+          "targetRoomId": "vegetable_garden",
+          "targetSpawnPointId": "from_farmhouse_porch",
+          "label": "Vegetable Garden"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {
+          "id": "default",
+          "x": 320,
+          "y": 306,
+          "facing": "W"
+        },
+        {
+          "id": "from_vegetable_garden",
+          "x": 72,
+          "y": 306,
+          "facing": "E"
+        }
+      ],
+      "objectIds": [
+        "glove_hook",
+        "porch_chair"
+      ],
+      "actorIds": [
+        "cat"
+      ],
+      "effects": [
+        {
+          "id": "porch_window_glow",
+          "type": "glow",
+          "layer": "background",
+          "x": 200,
+          "y": 54,
+          "width": 240,
+          "height": 180,
+          "color": "#ffcc66",
+          "intensity": 0.45,
+          "speed": 0.5,
+          "seed": 8,
+          "visible": true
+        },
+        {
+          "id": "porch_evening_dust",
+          "type": "dust",
+          "layer": "background",
+          "x": 0,
+          "y": 180,
+          "width": 640,
+          "height": 180,
+          "color": "rgba(220,200,170,0.4)",
+          "intensity": 0.2,
+          "speed": 0.35,
+          "seed": 15,
+          "visible": true
+        }
+      ]
+    }
+  ],
+  "actors": [
+    {
+      "id": "russ_toire",
+      "name": "Russ Toire",
+      "isPlayer": true,
+      "position": {
+        "x": 320,
+        "y": 306
+      },
+      "facing": "E",
+      "movementSpeed": 130,
+      "spriteWidth": 32,
+      "spriteHeight": 54,
+      "spritePath": "bork_actor_russ_toire",
+      "animations": {
+        "E": {
+          "idle": {
+            "id": "idle_e",
+            "frames": [
+              {
+                "imagePath": "bork_actor_russ_idle_0",
+                "duration": 700
+              },
+              {
+                "imagePath": "bork_actor_russ_idle_1",
+                "duration": 700
+              }
+            ],
+            "loop": true
+          },
+          "walk": {
+            "id": "walk_e",
+            "frames": [
+              {
+                "imagePath": "bork_actor_russ_walk_0",
+                "duration": 160
+              },
+              {
+                "imagePath": "bork_actor_russ_walk_1",
+                "duration": 160
+              }
+            ],
+            "loop": true
+          }
+        }
+      }
+    },
+    {
+      "id": "old_hen",
+      "name": "Old Hen",
+      "isPlayer": false,
+      "defaultRoomId": "farmyard",
+      "position": {
+        "x": 192,
+        "y": 311
+      },
+      "facing": "E",
+      "movementSpeed": 80,
+      "spriteWidth": 32,
+      "spriteHeight": 50,
+      "dialogueId": "old_hen_dialogue",
+      "verbHandlers": {
+        "look": "look_old_hen"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_old_hen"
+    },
+    {
+      "id": "duck",
+      "name": "Duck",
+      "isPlayer": false,
+      "defaultRoomId": "farmyard",
+      "position": {
+        "x": 448,
+        "y": 311
+      },
+      "facing": "W",
+      "movementSpeed": 80,
+      "spriteWidth": 29,
+      "spriteHeight": 43,
+      "dialogueId": "duck_dialogue",
+      "verbHandlers": {
+        "look": "look_duck"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_duck"
+    },
+    {
+      "id": "goat",
+      "name": "Sleepy Goat",
+      "isPlayer": false,
+      "defaultRoomId": "barn",
+      "position": {
+        "x": 464,
+        "y": 311
+      },
+      "facing": "W",
+      "movementSpeed": 70,
+      "spriteWidth": 43,
+      "spriteHeight": 56,
+      "dialogueId": "goat_dialogue",
+      "verbHandlers": {
+        "look": "look_goat"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_goat"
+    },
+    {
+      "id": "hens",
+      "name": "Gossiping Hens",
+      "isPlayer": false,
+      "defaultRoomId": "chicken_coop",
+      "position": {
+        "x": 208,
+        "y": 311
+      },
+      "facing": "E",
+      "movementSpeed": 80,
+      "spriteWidth": 38,
+      "spriteHeight": 47,
+      "dialogueId": "hens_dialogue",
+      "verbHandlers": {
+        "look": "look_hens"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_hens"
+    },
+    {
+      "id": "rabbit",
+      "name": "Rabbit",
+      "isPlayer": false,
+      "defaultRoomId": "vegetable_garden",
+      "position": {
+        "x": 224,
+        "y": 311
+      },
+      "facing": "E",
+      "movementSpeed": 95,
+      "spriteWidth": 27,
+      "spriteHeight": 45,
+      "dialogueId": "rabbit_dialogue",
+      "verbHandlers": {
+        "look": "look_rabbit"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_rabbit"
+    },
+    {
+      "id": "cat",
+      "name": "Cat",
+      "isPlayer": false,
+      "defaultRoomId": "farmhouse_porch",
+      "position": {
+        "x": 392,
+        "y": 311
+      },
+      "facing": "W",
+      "movementSpeed": 100,
+      "spriteWidth": 27,
+      "spriteHeight": 38,
+      "dialogueId": "cat_dialogue",
+      "verbHandlers": {
+        "look": "look_cat"
+      },
+      "fallbackScriptId": "npc_fallback",
+      "spritePath": "bork_actor_cat"
+    }
+  ],
+  "objects": [
+    {
+      "id": "scarecrow",
+      "name": "Scarecrow",
+      "roomId": "farmyard",
+      "position": {
+        "x": 320,
+        "y": 297
+      },
+      "spriteWidth": 72,
+      "spriteHeight": 120,
+      "bounds": {
+        "x": -36,
+        "y": -120,
+        "width": 72,
+        "height": 120
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A solemn scarecrow awaiting ceremonial fashion.",
+      "verbHandlers": {
+        "look": "look_scarecrow"
+      },
+      "useWithHandlers": {
+        "straw_hat": "place_hat_on_scarecrow",
+        "plaid_shirt": "place_shirt_on_scarecrow",
+        "leather_gloves": "place_gloves_on_scarecrow"
+      },
+      "state": {
+        "dress_stage": 0
+      },
+      "fallbackScriptId": "scarecrow_fallback",
+      "spritePath": "bork_obj_scarecrow"
+    },
+    {
+      "id": "cult_bucket",
+      "name": "Cult Bucket",
+      "roomId": "farmyard",
+      "position": {
+        "x": 448,
+        "y": 324
+      },
+      "spriteWidth": 38,
+      "spriteHeight": 34,
+      "bounds": {
+        "x": -19,
+        "y": -34,
+        "width": 38,
+        "height": 34
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "An overturned bucket serving as an altar of alarming sincerity.",
+      "verbHandlers": {
+        "look": "look_cult_bucket"
+      },
+      "spritePath": "bork_obj_cult_bucket"
+    },
+    {
+      "id": "hay_pile",
+      "name": "Hay Pile",
+      "roomId": "barn",
+      "position": {
+        "x": 192,
+        "y": 315
+      },
+      "spriteWidth": 120,
+      "spriteHeight": 80,
+      "bounds": {
+        "x": -60,
+        "y": -80,
+        "width": 120,
+        "height": 80
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A fragrant hay pile with suspiciously plaid implications.",
+      "verbHandlers": {
+        "look": "look_hay_pile",
+        "open": "search_hay_pile",
+        "use": "search_hay_pile",
+        "pickup": "search_hay_pile"
+      },
+      "spritePath": "bork_obj_hay_pile"
+    },
+    {
+      "id": "barn_tools",
+      "name": "Barn Tools",
+      "roomId": "barn",
+      "position": {
+        "x": 552,
+        "y": 302
+      },
+      "spriteWidth": 60,
+      "spriteHeight": 100,
+      "bounds": {
+        "x": -30,
+        "y": -100,
+        "width": 60,
+        "height": 100
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A collection of tools trying their best to stay out of prophecy.",
+      "spritePath": "bork_obj_barn_tools"
+    },
+    {
+      "id": "hay_bale",
+      "name": "Hay Bale",
+      "roomId": "hay_field",
+      "position": {
+        "x": 240,
+        "y": 315
+      },
+      "spriteWidth": 90,
+      "spriteHeight": 60,
+      "bounds": {
+        "x": -45,
+        "y": -60,
+        "width": 90,
+        "height": 60
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A tightly packed hay bale radiating rural confidence.",
+      "spritePath": "bork_obj_hay_bale"
+    },
+    {
+      "id": "fence_post",
+      "name": "Fence Post",
+      "roomId": "hay_field",
+      "position": {
+        "x": 496,
+        "y": 306
+      },
+      "spriteWidth": 24,
+      "spriteHeight": 90,
+      "bounds": {
+        "x": -12,
+        "y": -90,
+        "width": 24,
+        "height": 90
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A weathered fence post. It has seen things.",
+      "spritePath": "bork_obj_fence_post"
+    },
+    {
+      "id": "windmill",
+      "name": "Windmill",
+      "roomId": "windmill_hill",
+      "position": {
+        "x": 464,
+        "y": 297
+      },
+      "spriteWidth": 120,
+      "spriteHeight": 160,
+      "bounds": {
+        "x": -60,
+        "y": -160,
+        "width": 120,
+        "height": 160
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "An old windmill whose wooden teeth mutter into the breeze.",
+      "verbHandlers": {
+        "look": "look_windmill"
+      },
+      "spritePath": "bork_obj_windmill"
+    },
+    {
+      "id": "windmill_ladder",
+      "name": "Windmill Ladder",
+      "roomId": "windmill_hill",
+      "position": {
+        "x": 400,
+        "y": 306
+      },
+      "spriteWidth": 46,
+      "spriteHeight": 108,
+      "bounds": {
+        "x": -23,
+        "y": -108,
+        "width": 46,
+        "height": 108
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A narrow ladder leading upward toward a hat and questionable decision-making.",
+      "verbHandlers": {
+        "look": "look_windmill_ladder",
+        "use": "climb_windmill_ladder",
+        "open": "climb_windmill_ladder"
+      },
+      "spritePath": "bork_obj_windmill_ladder"
+    },
+    {
+      "id": "nest_boxes",
+      "name": "Nest Boxes",
+      "roomId": "chicken_coop",
+      "position": {
+        "x": 448,
+        "y": 306
+      },
+      "spriteWidth": 124,
+      "spriteHeight": 90,
+      "bounds": {
+        "x": -62,
+        "y": -90,
+        "width": 124,
+        "height": 90
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A row of nest boxes filled with straw and competitive gossip.",
+      "verbHandlers": {
+        "look": "look_nest_boxes"
+      },
+      "spritePath": "bork_obj_nest_boxes"
+    },
+    {
+      "id": "feather_pile",
+      "name": "Feather Pile",
+      "roomId": "chicken_coop",
+      "position": {
+        "x": 288,
+        "y": 324
+      },
+      "spriteWidth": 48,
+      "spriteHeight": 26,
+      "bounds": {
+        "x": -24,
+        "y": -26,
+        "width": 48,
+        "height": 26
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A fluffy little heap of evidence.",
+      "spritePath": "bork_obj_feather_pile"
+    },
+    {
+      "id": "garden_rows",
+      "name": "Garden Rows",
+      "roomId": "vegetable_garden",
+      "position": {
+        "x": 376,
+        "y": 315
+      },
+      "spriteWidth": 190,
+      "spriteHeight": 72,
+      "bounds": {
+        "x": -95,
+        "y": -72,
+        "width": 190,
+        "height": 72
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "Vegetable rows arranged with considerably more dignity than the cult.",
+      "spritePath": "bork_obj_garden_rows"
+    },
+    {
+      "id": "watering_can",
+      "name": "Watering Can",
+      "roomId": "vegetable_garden",
+      "position": {
+        "x": 508,
+        "y": 324
+      },
+      "spriteWidth": 38,
+      "spriteHeight": 36,
+      "bounds": {
+        "x": -19,
+        "y": -36,
+        "width": 38,
+        "height": 36
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A dented watering can. Even it seems nervous around the rabbit.",
+      "spritePath": "bork_obj_watering_can"
+    },
+    {
+      "id": "glove_hook",
+      "name": "Glove Hook",
+      "roomId": "farmhouse_porch",
+      "position": {
+        "x": 488,
+        "y": 288
+      },
+      "spriteWidth": 50,
+      "spriteHeight": 100,
+      "bounds": {
+        "x": -25,
+        "y": -100,
+        "width": 50,
+        "height": 100
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A hook holding the farmer's leather gloves under feline supervision.",
+      "verbHandlers": {
+        "look": "look_glove_hook",
+        "pickup": "pickup_gloves",
+        "use": "pickup_gloves",
+        "open": "pickup_gloves"
+      },
+      "spritePath": "bork_obj_glove_hook"
+    },
+    {
+      "id": "porch_chair",
+      "name": "Porch Chair",
+      "roomId": "farmhouse_porch",
+      "position": {
+        "x": 232,
+        "y": 315
+      },
+      "spriteWidth": 60,
+      "spriteHeight": 70,
+      "bounds": {
+        "x": -30,
+        "y": -70,
+        "width": 60,
+        "height": 70
+      },
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A chair suitable for rocking and judgment.",
+      "spritePath": "bork_obj_porch_chair"
+    }
+  ],
+  "items": [
+    {
+      "id": "straw_hat",
+      "name": "Straw Hat",
+      "description": "A sacred straw hat of the Tall One.",
+      "verbHandlers": {
+        "look": "look_straw_hat"
+      },
+      "iconPath": "bork_item_straw_hat"
+    },
+    {
+      "id": "leather_gloves",
+      "name": "Leather Gloves",
+      "description": "Work gloves of legendary agricultural significance.",
+      "verbHandlers": {
+        "look": "look_leather_gloves"
+      },
+      "iconPath": "bork_item_leather_gloves"
+    },
+    {
+      "id": "plaid_shirt",
+      "name": "Plaid Shirt",
+      "description": "A plaid shirt that radiates rustic destiny.",
+      "verbHandlers": {
+        "look": "look_plaid_shirt"
+      },
+      "iconPath": "bork_item_plaid_shirt"
+    }
+  ],
+  "scripts": [
+    {
+      "name": "enter_farmyard",
+      "kind": "visual",
+      "body": "",
+      "description": "First-visit introduction to the sacred errand.",
+      "steps": [
+        {
+          "type": "if",
+          "condition": {
+            "type": "roomVisited",
+            "roomId": "farmyard"
+          },
+          "thenSteps": [],
+          "elseSteps": [
+            {
+              "type": "lockInput"
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "russ_toire",
+              "text": "A small farm in the French countryside. Somehow, this is where destiny has cornered me."
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "old_hen",
+              "text": "Russ Toire! The scarecrow awaits the Vestments of Plenty!"
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "russ_toire",
+              "text": "I joined a barnyard cult for this?"
+            },
+            {
+              "type": "unlockInput"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "look_old_hen",
+      "body": "ctx.say('Old Hen radiates the grave authority of someone who has mistaken a bucket for an altar.');"
+    },
+    {
+      "name": "look_duck",
+      "body": "ctx.say('A duck posing like a prophet of the pond.');"
+    },
+    {
+      "name": "look_goat",
+      "body": "ctx.say('A sleepy goat whose commitment to comfort borders on theology.');"
+    },
+    {
+      "name": "look_hens",
+      "body": "ctx.say('A cluster of hens vibrating faintly with gossip.');"
+    },
+    {
+      "name": "look_rabbit",
+      "body": "ctx.say('A nervous rabbit scanning for threats, curses, and porch accessories.');"
+    },
+    {
+      "name": "look_cat",
+      "body": "ctx.say('A cat with the effortless confidence of a creature who has never apologized once.');"
+    },
+    {
+      "name": "npc_fallback",
+      "body": "ctx.say('That does not seem like the sort of thing polite barnyard society encourages.');"
+    },
+    {
+      "name": "global_fallback",
+      "body": "ctx.say('Russ considers that carefully, then decides it is probably not central to the prophecy.');"
+    },
+    {
+      "name": "scarecrow_fallback",
+      "body": "ctx.say('If the scarecrow is to be persuaded, clothing is clearly the diplomatic route.');"
+    },
+    {
+      "name": "start_quest",
+      "body": "if (ctx.getFlag('quest_started')) { return; } ctx.setFlag('quest_started', true); ctx.say('You have been entrusted with recovering the sacred wardrobe of the Farmer. This feels less heroic than advertised.');"
+    },
+    {
+      "name": "look_scarecrow",
+      "body": "const stage = ctx.state.getObjectState('scarecrow', 'dress_stage') || 0; if (stage === 0) { ctx.say('A solemn scarecrow stands bare of ceremony, awaiting the Vestments of Plenty.'); } else if (stage === 1) { ctx.say('The scarecrow now wears the sacred hat. It looks mildly supervisory.'); } else if (stage === 2) { ctx.say('The scarecrow now wears hat and shirt. It has become alarmingly official.'); } else { ctx.say('The scarecrow is fully vested in barnyard glory.'); }"
+    },
+    {
+      "name": "place_hat_on_scarecrow",
+      "body": "if (ctx.getFlag('hat_on_scarecrow')) { ctx.say('The straw hat is already perched there with stern agricultural dignity.'); return; } ctx.removeItem('russ_toire', 'straw_hat'); ctx.setFlag('hat_on_scarecrow', true); ctx.state.setObjectState('scarecrow', 'dress_stage', 1); ctx.say('Russ flips the straw hat onto the scarecrow. It instantly looks much more qualified to supervise corn.');"
+    },
+    {
+      "name": "place_shirt_on_scarecrow",
+      "body": "if (ctx.getFlag('shirt_on_scarecrow')) { ctx.say('The plaid shirt is already in place, gloriously rustic.'); return; } ctx.removeItem('russ_toire', 'plaid_shirt'); ctx.setFlag('shirt_on_scarecrow', true); const stage = ctx.getFlag('hat_on_scarecrow') ? 2 : 1; ctx.state.setObjectState('scarecrow', 'dress_stage', stage); ctx.say('Russ drapes the plaid shirt over the scarecrow. The ritual suddenly feels alarmingly real.');"
+    },
+    {
+      "name": "place_gloves_on_scarecrow",
+      "body": "if (ctx.getFlag('gloves_on_scarecrow')) { ctx.say('The leather gloves are already in place, projecting unmistakable authority.'); return; } ctx.removeItem('russ_toire', 'leather_gloves'); ctx.setFlag('gloves_on_scarecrow', true); const stage = (ctx.getFlag('hat_on_scarecrow') && ctx.getFlag('shirt_on_scarecrow')) ? 3 : (ctx.getFlag('hat_on_scarecrow') || ctx.getFlag('shirt_on_scarecrow')) ? 2 : 1; ctx.state.setObjectState('scarecrow', 'dress_stage', stage); ctx.say('Russ fits the gloves onto the scarecrow\\'s stick hands. The ensemble is now only mildly unsettling.');"
+    },
+    {
+      "name": "look_cult_bucket",
+      "body": "ctx.say('An overturned bucket used as a ceremonial altar. Mysticism, apparently, can be very affordable.');"
+    },
+    {
+      "name": "look_hay_pile",
+      "body": "ctx.say('A generous heap of hay. Something in there is either hidden treasure or an allergy.');"
+    },
+    {
+      "name": "search_hay_pile",
+      "body": "if (ctx.getFlag('found_plaid_shirt')) { ctx.say('Russ rummages through the hay again and discovers only more hay. The hay remains committed to the bit.'); return; } ctx.setFlag('found_plaid_shirt', true); ctx.giveItem('russ_toire', 'plaid_shirt'); ctx.say('Russ pecks and scratches through the hay until a plaid shirt emerges, gloriously dusty and unexpectedly sacred.');"
+    },
+    {
+      "name": "look_windmill",
+      "body": "if (ctx.getFlag('retrieved_hat')) { ctx.say('The windmill turns on, no longer burdened by hat-related theology.'); } else { ctx.say('The windmill creaks against the sky. Somewhere up there, destiny is wearing straw.'); }"
+    },
+    {
+      "name": "look_windmill_ladder",
+      "body": "ctx.say('A ladder climbs the windmill. Somewhere above waits a hat and a regrettable amount of symbolism.');"
+    },
+    {
+      "name": "climb_windmill_ladder",
+      "body": "if (ctx.getFlag('retrieved_hat')) { ctx.say('Russ climbs up again, but there is nothing left to recover except perspective.'); return; } ctx.setFlag('retrieved_hat', true); ctx.giveItem('russ_toire', 'straw_hat'); ctx.say('Russ flutters and scrambles up the ladder, wrestles the straw hat free, and returns feeling absurdly heroic.');"
+    },
+    {
+      "name": "look_glove_hook",
+      "body": "if (ctx.getFlag('found_gloves')) { ctx.say('The hook is empty. The sacred hand-coverings have been claimed.'); return; } ctx.say('A porch hook holds the farmer\\'s leather gloves. The cat appears to have annexed them.');"
+    },
+    {
+      "name": "pickup_gloves",
+      "body": "if (!ctx.getFlag('cat_distracted')) { ctx.say('The cat glides neatly into your way and informs you, without words, that the gloves are under feline protection.'); return; } if (ctx.getFlag('found_gloves')) { ctx.say('The hook is empty. You already took the gloves.'); return; } ctx.setFlag('found_gloves', true); ctx.giveItem('russ_toire', 'leather_gloves'); ctx.say('Russ hops up and claims the leather gloves. The cat allows it purely because the ritual amuses it.');"
+    },
+    {
+      "name": "look_nest_boxes",
+      "body": "ctx.say('Nest boxes full of straw, feathers, and secrets no one intends to keep.');"
+    },
+    {
+      "name": "look_straw_hat",
+      "body": "ctx.say('A crisp straw hat with exactly the amount of gravitas this ceremony requires.');"
+    },
+    {
+      "name": "look_leather_gloves",
+      "body": "ctx.say('A pair of worn leather gloves. They smell faintly of work and destiny.');"
+    },
+    {
+      "name": "look_plaid_shirt",
+      "body": "ctx.say('A plaid shirt of immense rustic symbolism.');"
+    },
+    {
+      "name": "final_ceremony",
+      "kind": "visual",
+      "body": "",
+      "description": "Triggered once the scarecrow is fully dressed.",
+      "steps": [
+        {
+          "type": "if",
+          "condition": {
+            "type": "flag",
+            "flag": "ceremony_complete"
+          },
+          "thenSteps": [],
+          "elseSteps": [
+            {
+              "type": "setFlag",
+              "flag": "ceremony_complete",
+              "value": true
+            },
+            {
+              "type": "beginCutscene"
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "old_hen",
+              "text": "The Vestments of Plenty are restored! The ancient barnyard covenant is renewed!"
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "duck",
+              "text": "The wind bears witness."
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "rabbit",
+              "text": "I knew the gloves were cursed!"
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "cat",
+              "text": "This was absolutely worth it."
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "russ_toire",
+              "text": "We dressed a scarecrow in stolen laundry."
+            },
+            {
+              "type": "sayBlocking",
+              "actorId": "old_hen",
+              "text": "And yet—behold how majestic he is."
+            },
+            {
+              "type": "say",
+              "text": "The barnyard erupts in triumphant chanting as the fully dressed scarecrow presides over the most ridiculous ritual in the French countryside."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dialogueTrees": [
+    {
+      "id": "old_hen_dialogue",
+      "name": "Old Hen Conversation",
+      "actorId": "old_hen",
+      "startNodeId": "intro",
+      "onStartFlag": "talked_to_old_hen",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "old_hen",
+          "text": "Russ Toire, chosen beak of the barnyard, the scarecrow stands naked before destiny.",
+          "once": true,
+          "branches": [],
+          "actions": [
+            {
+              "type": "callScript",
+              "scriptId": "start_quest"
+            }
+          ]
+        },
+        {
+          "id": "progress_none",
+          "speaker": "old_hen",
+          "text": "The Vestments of Plenty must be restored: the straw hat, the leather gloves, and the plaid shirt.",
+          "condition": {
+            "type": "and",
+            "conditions": [
+              {
+                "type": "not",
+                "condition": {
+                  "type": "flag",
+                  "flag": "hat_on_scarecrow"
+                }
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "flag",
+                  "flag": "shirt_on_scarecrow"
+                }
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "flag",
+                  "flag": "gloves_on_scarecrow"
+                }
+              }
+            ]
+          },
+          "branches": [
+            {
+              "id": "ask_remind",
+              "text": "What am I looking for again?",
+              "nextNodeId": "remind_items",
+              "once": true
+            },
+            {
+              "id": "ask_why",
+              "text": "Why are we dressing a scarecrow?",
+              "nextNodeId": "why_ceremony",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "I will continue the sacred errand.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "progress_some",
+          "speaker": "old_hen",
+          "text": "The Vestments gather. The scarecrow stirs in spirit.",
+          "condition": {
+            "type": "and",
+            "conditions": [
+              {
+                "type": "or",
+                "conditions": [
+                  {
+                    "type": "flag",
+                    "flag": "hat_on_scarecrow"
+                  },
+                  {
+                    "type": "flag",
+                    "flag": "shirt_on_scarecrow"
+                  },
+                  {
+                    "type": "flag",
+                    "flag": "gloves_on_scarecrow"
+                  }
+                ]
+              },
+              {
+                "type": "not",
+                "condition": {
+                  "type": "flag",
+                  "flag": "ceremony_complete"
+                }
+              }
+            ]
+          },
+          "branches": [
+            {
+              "id": "ask_missing",
+              "text": "What is still missing?",
+              "nextNodeId": "missing_items",
+              "once": true
+            },
+            {
+              "id": "bye2",
+              "text": "I will finish this.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "post_ceremony",
+          "speaker": "old_hen",
+          "text": "The covenant is renewed. The field shall know bounty. Or at least respectable scarecrow tailoring.",
+          "condition": {
+            "type": "flag",
+            "flag": "ceremony_complete"
+          },
+          "branches": [
+            {
+              "id": "bye3",
+              "text": "Majestic indeed.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "remind_items",
+          "speaker": "old_hen",
+          "text": "The straw hat, the leather gloves, and the plaid shirt. These are the Vestments of Plenty.",
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "why_ceremony",
+          "speaker": "old_hen",
+          "text": "Because tradition demands it, and because last year we tried chanting at a rake and nothing improved.",
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "missing_items",
+          "speaker": "old_hen",
+          "text": "Whatever is not yet upon the scarecrow remains missing. Destiny is frustratingly literal.",
+          "branches": [],
+          "actions": []
+        }
+      ]
+    },
+    {
+      "id": "goat_dialogue",
+      "name": "Goat Conversation",
+      "actorId": "goat",
+      "startNodeId": "intro",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "goat",
+          "text": "If this is about chores, I have already devoted myself to the spiritual practice of lying down.",
+          "once": true,
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "before_shirt",
+          "speaker": "goat",
+          "text": "The barn contains hay, dust, and a deeply comforting plaid mystery.",
+          "condition": {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "flag": "found_plaid_shirt"
+            }
+          },
+          "branches": [
+            {
+              "id": "ask_plaid",
+              "text": "Seen anything plaid?",
+              "nextNodeId": "plaid_hint",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "Rest well, visionary.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "after_shirt",
+          "speaker": "goat",
+          "text": "I miss my plaid blanket. It supported me emotionally.",
+          "condition": {
+            "type": "flag",
+            "flag": "found_plaid_shirt"
+          },
+          "branches": [
+            {
+              "id": "bye2",
+              "text": "Your sacrifice will be remembered.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "plaid_hint",
+          "speaker": "goat",
+          "text": "There was something plaid in the hay pile. I sat on it for several hours in a spirit of mutual understanding.",
+          "branches": [],
+          "actions": []
+        }
+      ]
+    },
+    {
+      "id": "hens_dialogue",
+      "name": "Hens Conversation",
+      "actorId": "hens",
+      "startNodeId": "intro",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "hens",
+          "text": "Cluck-cluck-cluck! Russ, have you heard? No, of course not. That is why we are here.",
+          "once": true,
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "before_shirt",
+          "speaker": "hens",
+          "text": "We know things. We repeat them loudly. It is a gift.",
+          "condition": {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "flag": "found_plaid_shirt"
+            }
+          },
+          "branches": [
+            {
+              "id": "ask_shirt",
+              "text": "Tell me about the plaid shirt.",
+              "nextNodeId": "shirt_hint",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "Continue your excellent journalism.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "after_shirt",
+          "speaker": "hens",
+          "text": "The plaid has been recovered! We expect at least three rounds of ceremonial gossip.",
+          "condition": {
+            "type": "flag",
+            "flag": "found_plaid_shirt"
+          },
+          "branches": [
+            {
+              "id": "bye2",
+              "text": "Carry on.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "shirt_hint",
+          "speaker": "hens",
+          "text": "The goat sat on something plaid in the barn! He called it a pillow. We called it scandalous.",
+          "branches": [],
+          "actions": [
+            {
+              "type": "setFlag",
+              "flag": "heard_hens_hint",
+              "flagValue": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rabbit_dialogue",
+      "name": "Rabbit Conversation",
+      "actorId": "rabbit",
+      "startNodeId": "intro",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "rabbit",
+          "text": "Quiet! The vegetables are listening. And the gloves. The gloves are definitely listening.",
+          "once": true,
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "before_gloves",
+          "speaker": "rabbit",
+          "text": "Knowledge is dangerous. So are porch accessories.",
+          "condition": {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "flag": "found_gloves"
+            }
+          },
+          "branches": [
+            {
+              "id": "ask_gloves",
+              "text": "Where are the leather gloves?",
+              "nextNodeId": "glove_hint",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "Remain vigilant.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "after_gloves",
+          "speaker": "rabbit",
+          "text": "You took the gloves? Good. They were probably cursed. Or damp. Possibly both.",
+          "condition": {
+            "type": "flag",
+            "flag": "found_gloves"
+          },
+          "branches": [
+            {
+              "id": "bye2",
+              "text": "Reassuring as always.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "glove_hint",
+          "speaker": "rabbit",
+          "text": "On the farmhouse porch! Hanging from a hook like cursed little hand ghosts! There is also a cat, which somehow makes it worse.",
+          "branches": [],
+          "actions": [
+            {
+              "type": "setFlag",
+              "flag": "heard_rabbit_hint",
+              "flagValue": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cat_dialogue",
+      "name": "Cat Conversation",
+      "actorId": "cat",
+      "startNodeId": "intro",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "cat",
+          "text": "Yes, I am guarding the gloves. No, I was not asked to. Standards must be maintained.",
+          "once": true,
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "before_access",
+          "speaker": "cat",
+          "text": "Go on, then. Impress me.",
+          "condition": {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "flag": "cat_distracted"
+            }
+          },
+          "branches": [
+            {
+              "id": "ask_gloves",
+              "text": "I need the gloves for a sacred scarecrow ceremony.",
+              "nextNodeId": "amused",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "I will leave you to your porch empire.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "after_access",
+          "speaker": "cat",
+          "text": "I still cannot believe you dressed a scarecrow for spiritual reasons. Rural life continues to exceed my expectations.",
+          "condition": {
+            "type": "flag",
+            "flag": "cat_distracted"
+          },
+          "branches": [
+            {
+              "id": "bye2",
+              "text": "You are welcome.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "amused",
+          "speaker": "cat",
+          "text": "A chicken in a cult dressing a scarecrow? That is the funniest thing I have heard all week. Fine. Take them.",
+          "branches": [],
+          "actions": [
+            {
+              "type": "setFlag",
+              "flag": "cat_distracted",
+              "flagValue": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "duck_dialogue",
+      "name": "Duck Conversation",
+      "actorId": "duck",
+      "startNodeId": "intro",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "duck",
+          "text": "The wind turns, the hill watches, and the wooden teeth whisper to the worthy.",
+          "once": true,
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "before_hat",
+          "speaker": "duck",
+          "text": "I have consulted the breeze. It was vague, but dramatic.",
+          "condition": {
+            "type": "not",
+            "condition": {
+              "type": "flag",
+              "flag": "retrieved_hat"
+            }
+          },
+          "branches": [
+            {
+              "id": "ask_hat",
+              "text": "Where is the straw hat?",
+              "nextNodeId": "hat_hint",
+              "once": true
+            },
+            {
+              "id": "bye",
+              "text": "Profound as always.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "after_hat",
+          "speaker": "duck",
+          "text": "You have climbed, reclaimed, and returned. The wind acknowledges your absurd courage.",
+          "condition": {
+            "type": "flag",
+            "flag": "retrieved_hat"
+          },
+          "branches": [
+            {
+              "id": "bye2",
+              "text": "I accept the wind's praise.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "hat_hint",
+          "speaker": "duck",
+          "text": "The sacred hat waits where the wind whistles through wooden teeth. Climb, and reclaim what the sky has borrowed.",
+          "branches": [],
+          "actions": [
+            {
+              "type": "setFlag",
+              "flag": "heard_duck_hint",
+              "flagValue": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [],
+  "uiSettings": {
+    "verbBarEnabled": true,
+    "inventoryEnabled": true,
+    "messageLogEnabled": true,
+    "showRoomTitle": true
+  },
+  "globalFallbackScriptId": "global_fallback",
+  "stateWatchers": [
+    {
+      "id": "all_clothes_placed",
+      "condition": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "flag",
+            "flag": "hat_on_scarecrow"
+          },
+          {
+            "type": "flag",
+            "flag": "shirt_on_scarecrow"
+          },
+          {
+            "type": "flag",
+            "flag": "gloves_on_scarecrow"
+          }
+        ]
+      },
+      "scriptId": "final_ceremony",
+      "once": true
+    }
+  ],
+  "variableDefinitions": [],
+  "overlayConfig": {
+    "verbBar": {
+      "visible": true,
+      "verbSelectMode": "rightclick"
+    },
+    "inventoryBar": {
+      "visible": true
+    },
+    "messageBar": {
+      "visible": true
+    },
+    "saveLoadBar": {
+      "visible": true
+    },
+    "hoverLabel": {
+      "visible": true
+    },
+    "roomTitle": {
+      "visible": true
+    }
+  },
+  "display": {
+    "baseWidth": 640,
+    "baseHeight": 360,
+    "scalingMode": "integer",
+    "pixelPerfect": true,
+    "viewportAlignment": "center",
+    "backgroundColor": "#000"
+  }
+}
