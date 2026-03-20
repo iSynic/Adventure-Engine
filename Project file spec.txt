@@ -1,0 +1,1086 @@
+Project File Specification (.advproject.json)
+
+This section is a complete technical reference for the .advproject.json file format. It is designed so that an LLM (or any code generator) can produce a valid, pre-populated project file that can be imported directly into the editor via "Import JSON". The generated file should contain rooms, actors, objects, items, scripts, and dialogue trees that form a playable adventure game.
+File Overview
+
+A project file is a single JSON object with formatVersion: 2. It is entirely self-contained — all assets are embedded as Base64 data URLs in the assetsarray, and all scripts are stored either as JavaScript source strings or structured visual step arrays. No external files are needed.
+
+When imported, the editor assigns a fresh id and updates themodified timestamp — so treat those two fields as placeholders. The created field is preserved exactly as supplied. All other fields are also preserved exactly as written.
+Top-Level Schema
+
+{
+  "formatVersion": 2,
+  "id": "placeholder",
+  "title": "My Adventure Game",
+  "created": 1700000000000,
+  "modified": 1700000000000,
+  "startingRoom": "room_id_of_first_room",
+  "defaultPlayerActorId": "player",
+  "defaultPlayerPosition": { "x": 200, "y": 340 },
+  "startingItems": [],
+  "verbs": ["walk","look","open","close","pickup","use","talk","push","pull","give"],
+  "rooms": [],
+  "actors": [],
+  "objects": [],
+  "items": [],
+  "scripts": [],
+  "assets": [],
+  "dialogueTrees": [],
+  "uiSettings": {
+    "verbBarEnabled": true,
+    "inventoryEnabled": true,
+    "messageLogEnabled": true,
+    "showRoomTitle": true
+  },
+  "globalFallbackScriptId": "generic_fallback",
+  "stateWatchers": [],
+  "variableDefinitions": [],
+  "display": {
+    "baseWidth": 640,
+    "baseHeight": 360,
+    "scalingMode": "integer",
+    "pixelPerfect": true,
+    "viewportAlignment": "center",
+    "backgroundColor": "#000"
+  },
+  "overlayConfig": {
+    "verbBar": { "visible": true, "verbSelectMode": "rightclick" },
+    "inventoryBar": { "visible": true },
+    "messageBar": { "visible": true },
+    "saveLoadBar": { "visible": true },
+    "hoverLabel": { "visible": true },
+    "roomTitle": { "visible": true }
+  }
+}
+
+Field Reference
+Field	Type	Required	Description
+formatVersion	number	Yes	Always 2.
+id	string	Yes	Any string (overwritten on import).
+title	string	Yes	Display name of the game.
+created	number	Yes	Unix timestamp in milliseconds (e.g. Date.now()).
+modified	number	Yes	Unix timestamp in milliseconds (overwritten on import).
+startingRoom	string	Yes	ID of the room the player starts in. Must match one of the room IDs.
+defaultPlayerActorId	string	Yes	ID of the player actor. Must match one actor with isPlayer: true.
+defaultPlayerPosition	{x,y}	Yes	Where the player spawns in the starting room (pixels).
+startingItems	string[]	Yes	Item IDs the player has at game start. Can be empty [].
+verbs	string[]	Yes	Available verbs. Valid values: "walk", "look", "open", "close", "pickup", "use", "talk", "push", "pull", "give".
+rooms	array	Yes	Room definitions (see below).
+actors	array	Yes	Actor definitions (see below). Must include one player actor.
+objects	array	Yes	Object definitions (see below).
+items	array	Yes	Inventory item definitions (see below).
+scripts	array	Yes	Script definitions (see below).
+assets	array	Yes	Embedded assets as Base64 data URLs (see below). Can be [] — the engine draws placeholder art.
+dialogueTrees	array	No	Branching dialogue trees (see below).
+uiSettings	object	No	UI toggle flags (see below).
+verbCursors	object	No	Maps verb names to asset IDs for custom cursor images.
+globalFallbackScriptId	string	No	Script run when an interaction is not handled by any entity-level handler. This is the last stop in the resolution chain: useWithHandlers → verbHandlers → entity fallbackScriptId → globalFallbackScriptId → default engine text.
+variableDefinitions	array	No	Formal definitions for typed game variables. Each entry has name, type ("boolean" | "number" | "string"), optional description, defaultValue, min/max (for numbers), and scope ("global" | "room").
+stateWatchers	array	No	Persistent condition monitors that auto-trigger scripts when conditions become true (see State Watchers below).
+display	object	No	Viewport display config. Fields: baseWidth, baseHeight (canvas resolution), scalingMode ("integer" | "fit" | "stretch" | "none"), pixelPerfect (boolean), viewportAlignment ("center" | "top-left"), backgroundColor (CSS color). Defaults to 640×360, integer scaling.
+overlayConfig	object	No	HUD overlay visibility. Each panel (verbBar, inventoryBar, messageBar, saveLoadBar, hoverLabel, roomTitle) takes { "visible": true }. verbBar also accepts verbSelectMode: "bar" (click verb then target) or "rightclick" (right-click to cycle verb).
+Coordinate System
+
+The game viewport size is defined by the project's display config (baseWidth × baseHeight). The default — and what the Bork sample uses — is 640 × 360. Origin (0, 0) is top-left. X increases rightward, Y increases downward. Room backgrounds can be larger than the display viewport — when they are, the camera scrolls to follow the player.
+
+Walkable ground is typically in the lower portion of the screen (Y ~220–355). Objects and actors placed above Y ~220 are "farther away" and appear smaller if depth scaling is configured. Spawn points and actor positions should be inside walkbox polygons.
+Room Definition
+
+{
+  "id": "tavern",
+  "name": "The Tavern",
+  "backgroundPath": "",
+  "width": 640,
+  "height": 360,
+  "walkboxes": [
+    {
+      "id": "floor",
+      "polygon": [
+        {"x": 24, "y": 252},
+        {"x": 616, "y": 252},
+        {"x": 616, "y": 355},
+        {"x": 24, "y": 355}
+      ],
+      "adjacentIds": []
+    }
+  ],
+  "exits": [
+    {
+      "id": "exit_street",
+      "direction": "W",
+      "bounds": {"x": 0, "y": 225, "width": 32, "height": 135},
+      "targetRoomId": "street",
+      "targetSpawnPointId": "from_tavern",
+      "label": "Street"
+    }
+  ],
+  "hotspots": [
+    {
+      "id": "notice_board",
+      "name": "Notice Board",
+      "roomId": "tavern",
+      "bounds": {"x": 240, "y": 90, "width": 64, "height": 90},
+      "description": "A wooden board covered in notices.",
+      "verbHandlers": {"look": "look_notice_board"}
+    }
+  ],
+  "spawnPoints": [
+    {"id": "default", "x": 320, "y": 306},
+    {"id": "from_street", "x": 80, "y": 306, "facing": "E"}
+  ],
+  "objectIds": ["barrel", "mug"],
+  "actorIds": ["bartender"],
+  "onEnter": "enter_tavern",
+  "transitionEffect": "fade"
+}
+
+Room Fields
+Field	Type	Required	Description
+id	string	Yes	Unique room identifier (snake_case recommended).
+name	string	Yes	Human-readable room name.
+backgroundPath	string	Yes	Asset path or empty string "" (engine draws gradient placeholder).
+width	number	Yes	Room width in pixels. Set to display.baseWidth for a non-scrolling room; wider = camera follows player.
+height	number	Yes	Room height in pixels. Should match background image height. Typically matches display.baseHeight.
+walkboxes	array	Yes	Walkable polygon regions (at least one).
+exits	array	No	Clickable exit regions linking to other rooms.
+hotspots	array	No	Invisible interaction zones.
+spawnPoints	array	No	Named positions for actor placement.
+objectIds	string[]	No	IDs of objects placed in this room (must match object definitions).
+actorIds	string[]	No	Required for NPCs to appear. IDs of NPC actors placed in this room. The engine only instantiates actors listed here — setting defaultRoomId on the actor alone is not sufficient. Both sides of the reference are required: the actor needs defaultRoomId pointing to this room, and this room needs the actor's ID in actorIds.
+onEnter	string	No	Script name executed when the player enters.
+onExit	string	No	Script name executed when the player leaves.
+transitionEffect	string	No	"fade" (default) or "instant".
+parallaxLayers	array	No	Background layers with {imagePath, scrollFactor}.
+maskPath	string	No	Asset path for a room mask image (e.g. for foreground overlays).
+ambientAudioPath	string	No	Asset path for a looping ambient audio track that plays while in this room.
+onUpdate	string	No	Script name executed every engine tick while this room is active. Use sparingly — runs at 60 fps.
+Walkbox Definition
+
+Walkboxes are convex or concave polygons defining where actors can walk. Each room needs at least one. Multiple walkboxes connect via adjacentIds — the engine uses BFS pathfinding across connected walkboxes.
+
+{
+  "id": "main_floor",
+  "polygon": [
+    {"x": 40, "y": 270}, {"x": 600, "y": 270},
+    {"x": 600, "y": 356}, {"x": 40, "y": 356}
+  ],
+  "adjacentIds": ["side_area"],
+  "scale": {
+    "near": 1.0, "far": 0.6,
+    "yNear": 356, "yFar": 270
+  },
+  "speedModifier": 1.0
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique within the room.
+polygon	{x,y}[]	Yes	Ordered vertices (3+ points). Define clockwise or counter-clockwise.
+adjacentIds	string[]	Yes	IDs of connected walkboxes in this room. Can be [].
+scale	object	No	Depth scaling: near/far = scale factors, yNear/yFar = Y boundaries.
+speedModifier	number	No	Walk speed multiplier (1.0 = normal, 0.5 = half speed).
+Exit Definition
+
+{
+  "id": "go_north",
+  "direction": "N",
+  "bounds": {"x": 350, "y": 0, "width": 100, "height": 40},
+  "targetRoomId": "forest",
+  "targetSpawnPointId": "from_south",
+  "label": "To the Forest"
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique within the room.
+direction	string	Yes	One of: "N", "NE", "E", "SE", "S", "SW", "W", "NW".
+bounds	{x,y,width,height}	Yes	Clickable rectangle in room coordinates.
+targetRoomId	string	Yes	Room to transition to.
+targetSpawnPointId	string	No	Spawn point in the target room. If omitted, uses "default".
+label	string	No	Hover text shown to the player.
+visibilityCondition	ConditionExpression	No	When set, the exit is only visible (and clickable) when this condition is true. See ConditionExpression below.
+interactionCondition	ConditionExpression	No	When set, the exit is visible but cannot be used unless this condition is true. The player sees it but gets blocked.
+Actor Definition
+
+{
+  "id": "player",
+  "name": "You",
+  "isPlayer": true,
+  "position": {"x": 200, "y": 340},
+  "facing": "E",
+  "movementSpeed": 130,
+  "spriteWidth": 40,
+  "spriteHeight": 60
+}
+
+{
+  "id": "bartender",
+  "name": "Bartender",
+  "isPlayer": false,
+  "defaultRoomId": "tavern",
+  "position": {"x": 600, "y": 310},
+  "facing": "W",
+  "movementSpeed": 80,
+  "spriteWidth": 40,
+  "spriteHeight": 60,
+  "dialogueId": "bartender_chat",
+  "verbHandlers": {
+    "look": "look_bartender",
+    "talk": "talk_bartender"
+  }
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique actor identifier.
+name	string	Yes	Display name.
+isPlayer	boolean	No	Set true for the player character. Exactly one actor should be the player.
+defaultRoomId	string	No	Room where this NPC belongs. Required for NPCs. Important: this alone does not place the actor — the target room must also list this actor's ID in its actorIds array.
+position	{x,y}	No	Starting position in their room.
+facing	string	No	Initial facing direction (N/NE/E/SE/S/SW/W/NW).
+movementSpeed	number	No	Pixels per second. Player default ~130, NPCs ~80.
+spriteWidth	number	No	Width of the sprite/placeholder in pixels.
+spriteHeight	number	No	Height of the sprite/placeholder in pixels.
+dialogueId	string	No	Dialogue tree ID triggered by the "Talk" verb.
+verbHandlers	object	No	Maps verb names to script names (e.g. {"look": "look_bartender"}).
+useWithHandlers	object	No	Maps inventory item IDs to script names. When the player uses a specific item on this actor, the mapped script runs instead of the generic "use" verb handler. E.g. {"gold_coin": "bribe_guard"}.
+fallbackScriptId	string	No	Catch-all script for unhandled verbs. Runs when the player uses a verb that has no handler in verbHandlers and no match in useWithHandlers.
+portraitPath	string	No	Asset path for a portrait image shown during dialogue.
+standPoint	{x,y}	No	Where the player walks to before interacting with this actor.
+approachDirection	string	No	Direction the player faces when arriving at the stand point (N/E/S/W/etc.).
+visible	boolean	No	Whether the actor is drawn. Default true.
+scale	number	No	Scale multiplier for the actor sprite (1.0 = normal).
+Object Definition
+
+{
+  "id": "barrel",
+  "name": "Barrel",
+  "roomId": "tavern",
+  "position": {"x": 350, "y": 320},
+  "spriteWidth": 40,
+  "spriteHeight": 50,
+  "bounds": {"x": -20, "y": -50, "width": 40, "height": 50},
+  "visible": true,
+  "enabled": true,
+  "pickupable": false,
+  "description": "A large wooden barrel.",
+  "verbHandlers": {
+    "look": "look_barrel",
+    "open": "open_barrel"
+  },
+  "state": {"open": false},
+  "stateSprites": []
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique object identifier.
+name	string	Yes	Display name (shown on hover/click).
+roomId	string	No	Room where this object exists. Required if listed in a room's objectIds.
+position	{x,y}	No	Feet/anchor point of the object in room coordinates (pixels). This is the bottom-center of the sprite — the point where the object touches the ground. Bounds are relative to this point (use negative y to extend upward).
+spriteWidth/Height	number	No	Size of the sprite or placeholder in pixels. Recommended even without art — the engine uses these dimensions to size the colored placeholder rectangle.
+bounds	{x,y,w,h}	No	Clickable area relative to position. Negative x/y offsets center the bounds. E.g. position (350,320) with bounds (-20,-50,40,50) makes clickable area from (330,270) to (370,320).
+visible	boolean	No	Whether the object is drawn. Default true.
+enabled	boolean	No	Whether the player can interact. Default true.
+pickupable	boolean	No	If true, "Pick Up" verb automatically adds it to inventory.
+description	string	No	Text shown when the player looks at it (if no look script).
+verbHandlers	object	No	Maps verb names to script names.
+useWithHandlers	object	No	Maps inventory item IDs to script names. The preferred way to handle "use X on Y" puzzles. E.g. {"brass_key": "unlock_with_key"} — when the player uses the brass_key item on this object, the unlock_with_key script runs. Takes priority over the generic "use" verb handler.
+fallbackScriptId	string	No	Catch-all script for unhandled verbs. Runs when no matching verbHandlers or useWithHandlers entry exists.
+state	object	No	Arbitrary key-value state. Changed via scripts.
+stateSprites	array	No	Array of {stateKey, stateValue, spritePath} entries for visual state changes.
+primaryState	number	No	Zero-based index into stateSprites for the initial visual state.
+zOffset	number	No	Adjusts Y-depth sorting order (positive = drawn later / in front).
+zLayer	"behind" | "normal" | "front"	No	Rendering layer relative to actors. "behind" always renders under actors, "front" always over. Default is "normal" (Y-sorted with actors).
+visibilityCondition	ConditionExpression	No	When set, the object is only visible when this condition is true. Powerful for puzzle progression — e.g. reveal a hidden passage after a flag is set. See ConditionExpression below.
+interactionCondition	ConditionExpression	No	When set, the object is visible but cannot be interacted with unless this condition is true.
+tags	string[]	No	Arbitrary tags for categorization. Can be checked by hasTag conditions.
+affordance	string	No	Suggested default verb: "look", "pickup", "use", "talk", or "none".
+standPoint	{x,y}	No	Where the player walks to before interacting with this object.
+approachDirection	string	No	Direction the player faces when arriving at the stand point (N/E/S/W/etc.).
+interactionHotspot	{x,y,width,height}	No	Custom clickable sub-region of the sprite (relative to position). Overrides bounds for click detection only.
+cursorOverride	string	No	Custom cursor asset ID shown when hovering over this object.
+Item Definition (Inventory)
+
+{
+  "id": "rusty_key",
+  "name": "Rusty Key",
+  "description": "A small rusty key. It might open something.",
+  "verbHandlers": {
+    "look": "examine_rusty_key",
+    "use": "use_rusty_key"
+  }
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique item identifier.
+name	string	Yes	Display name in inventory.
+description	string	No	Shown when examined.
+iconPath	string	No	Asset path for the inventory icon.
+verbHandlers	object	No	Maps verb names to script names.
+useWithHandlers	object	No	Maps target entity IDs (object/actor/hotspot IDs) to script names. When this inventory item is used on a specific target, the mapped script runs. E.g. {"locked_door": "use_key_on_door"}.
+fallbackScriptId	string	No	Catch-all script for unhandled verbs on this item.
+Script Definition
+
+Scripts are the heart of game logic. Each script has a name (referenced by verb handlers, room hooks, etc.) and either a body string (raw JavaScript) or a steps array (visual script). The raw body receives a ctxparameter — the ScriptContext API.
+
+// Raw script (kind: "raw" or omitted):
+{
+  "name": "open_barrel",
+  "body": "if (ctx.getFlag('barrel_open')) { ctx.say('Already open.'); return; } ctx.setFlag('barrel_open', true); ctx.say('You pry open the barrel and find a silver coin!'); ctx.giveItem('player', 'silver_coin');",
+  "description": "Opening the barrel puzzle"
+}
+
+// Visual script (kind: "visual"):
+{
+  "name": "open_barrel_visual",
+  "kind": "visual",
+  "body": "",
+  "description": "Same puzzle using visual steps",
+  "steps": [
+    {
+      "type": "if",
+      "condition": {"type": "flag", "flag": "barrel_open"},
+      "thenSteps": [
+        {"type": "say", "text": "Already open."}
+      ],
+      "elseSteps": [
+        {"type": "setFlag", "flag": "barrel_open", "value": true},
+        {"type": "say", "text": "You pry open the barrel and find a silver coin!"},
+        {"type": "giveItem", "actorId": "player", "itemId": "silver_coin"}
+      ]
+    }
+  ]
+}
+
+Field	Type	Required	Description
+name	string	Yes	Script identifier. Referenced by verbHandlers, onEnter, etc.
+kind	"raw" | "visual"	No	Script format. Default is "raw". When "visual", the engine compiles steps instead of executing body.
+body	string	Yes	JavaScript code string for raw scripts. Set to "" when using visual steps. Has access to ctx (ScriptContext). The engine wraps the body in an async function automatically, so await is always valid. Errors are caught and logged to the console — they do not crash the engine. Return values are ignored. There are no banned APIs. The context variables ctx.verb, ctx.currentTargetId, ctx.currentTargetType, and ctx.secondaryTargetId are available to inspect which verb triggered the script and what the target was.
+steps	array	No	Array of structured step objects for visual scripts. Used when kind is "visual". See Visual Script Steps below.
+description	string	No	Human-readable note about what this script does.
+Visual Script Steps
+
+Visual scripts use structured step objects instead of raw code. Each step has atype and type-specific fields. This format is more structured and less error-prone than raw JavaScript strings. Available step types:
+Step Type	Fields	Description
+"say"	text	Show a message (non-blocking).
+"sayBlocking"	actorId, text	Show a speech bubble and wait for dismissal.
+"setFlag"	flag, value	Set a boolean flag.
+"setVar"	variable, value	Set a variable.
+"incrementVar"	variable, amount?	Increment a numeric variable.
+"giveItem"	actorId, itemId	Give an item to an actor.
+"removeItem"	actorId, itemId	Remove an item from inventory.
+"gotoRoom"	roomId, spawnPointId?	Transition to a room.
+"wait"	duration	Pause for N milliseconds.
+"walkActorTo"	actorId, x, y	Move actor along walkbox path.
+"faceActor"	actorId, direction	Turn actor to face a direction.
+"startDialogue"	treeId	Launch a dialogue tree.
+"fadeOut"	duration?	Fade screen to black.
+"fadeIn"	duration?	Fade screen from black.
+"lockInput"	(none)	Freeze player interaction.
+"unlockInput"	(none)	Re-enable player interaction.
+"beginCutscene"	(none)	Start cutscene mode (locks input).
+"endCutscene"	(none)	End cutscene mode.
+"setObjectState"	objectId, key, value	Set a key on an object's state.
+"setObjectPrimaryState"	objectId, stateIndex	Set the primary state sprite index.
+"playAnimation"	actorId, animationState, waitForCompletion?	Play an animation.
+"emitSignal"	signal	Emit a named signal (for inter-script communication).
+"scheduleScript"	scriptId	Queue another script for execution.
+"setRoomVar"	roomId, key, value	Set a room-scoped variable.
+"if"	condition, thenSteps, elseSteps?	Conditional branching. condition is a ConditionExpression object. thenSteps and elseSteps are arrays of steps.
+ScriptContext API (available as ctx in script bodies)
+Method / Property	Description
+ctx.say(text)	Show a speech bubble / message. Non-blocking.
+await ctx.sayBlocking(actorId, text)	Show speech bubble over an actor. Blocks until dismissed.
+ctx.setFlag(key, value)	Set a boolean flag (for puzzle state, conditions).
+ctx.getFlag(key)	Get a boolean flag value (false if unset).
+ctx.setVar(key, value)	Set a numeric/string variable.
+ctx.getVar(key)	Get a variable value.
+ctx.giveItem(actorId, itemId)	Add an item to an actor's inventory.
+ctx.removeItem(actorId, itemId)	Remove an item from inventory.
+ctx.hasItem(actorId, itemId)	Check if an actor has an item (returns boolean).
+ctx.gotoRoom(roomId, spawnPointId?)	Transition to another room.
+await ctx.wait(ms)	Pause script execution for N milliseconds.
+await ctx.walkActorTo(actorId, x, y)	Move an actor along walkbox path. Resolves on arrival.
+ctx.faceActor(actorId, direction)	Turn an actor to face a direction. Plays a turn animation if one is defined.
+ctx.playAnimation(actorId, state, options?)	Play an animation state. Options: waitForCompletion (boolean), loop (boolean).
+ctx.setAnimationOverride(actorId, state)	Set a persistent animation override that sticks until cleared.
+ctx.clearAnimationOverride(actorId)	Clear a persistent animation override.
+await ctx.fadeOut(ms?)	Fade screen to black.
+await ctx.fadeIn(ms?)	Fade screen from black.
+ctx.lockInput()	Freeze player interaction (for cutscenes).
+ctx.unlockInput()	Re-enable player interaction.
+await ctx.startDialogue(treeId)	Launch a dialogue tree. Blocks until dialogue ends.
+ctx.state	Direct access to the StateStore (flags, vars, visited rooms, object states).
+ctx.verb	The verb the player used (e.g. "look", "use").
+ctx.currentTargetId	ID of the object/actor/hotspot the player clicked.
+ctx.secondaryTargetId	For "use X on Y" — the ID of the secondary target.
+
+Important: Script bodies are strings, not functions. Write them as a single-line or multi-line string. Use semicolons between statements. For async operations (wait, walkActorTo, sayBlocking, fadeOut,fadeIn, startDialogue), prefix with await.
+
+Example cutscene script body:
+
+"ctx.lockInput(); await ctx.sayBlocking('narrator', 'The door creaks open...'); await ctx.fadeOut(500); ctx.gotoRoom('secret_room', 'entrance'); await ctx.fadeIn(500); ctx.unlockInput();"
+
+Dialogue Tree Definition
+
+Dialogue trees define branching conversations with NPCs. They are triggered by setting an actor's dialogueId or calling ctx.startDialogue(treeId)from a script.
+
+{
+  "id": "bartender_chat",
+  "name": "Bartender Conversation",
+  "actorId": "bartender",
+  "startNodeId": "greeting",
+  "nodes": [
+    {
+      "id": "greeting",
+      "speaker": "bartender",
+      "text": "Welcome, traveler! What can I get you?",
+      "branches": [
+        {
+          "id": "ask_info",
+          "text": "I'm looking for information.",
+          "nextNodeId": "info_response"
+        },
+        {
+          "id": "ask_drink",
+          "text": "Just an ale, please.",
+          "nextNodeId": "drink_response"
+        },
+        {
+          "id": "leave",
+          "text": "Nothing, thanks.",
+          "nextNodeId": null
+        }
+      ],
+      "actions": []
+    },
+    {
+      "id": "info_response",
+      "speaker": "bartender",
+      "text": "Information costs coin around here, friend.",
+      "branches": [
+        {
+          "id": "pay",
+          "text": "Here, take this silver coin.",
+          "nextNodeId": "paid_info",
+          "condition": "has_silver_coin"
+        },
+        {
+          "id": "no_money",
+          "text": "I don't have any money.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    {
+      "id": "paid_info",
+      "speaker": "bartender",
+      "text": "The treasure is hidden beneath the old well.",
+      "branches": [],
+      "actions": [
+        {"type": "setFlag", "flag": "knows_treasure_location", "flagValue": true},
+        {"type": "endDialogue"}
+      ]
+    },
+    {
+      "id": "drink_response",
+      "speaker": "bartender",
+      "text": "Coming right up!",
+      "branches": [],
+      "actions": [
+        {"type": "giveItem", "itemId": "ale", "actorId": "player"},
+        {"type": "endDialogue"}
+      ]
+    }
+  ]
+}
+
+Hotspot Fields
+
+Hotspots are invisible interactive zones in rooms — used for things like signs on walls, background features, or anything that is not a moveable object.
+Field	Type	Required	Description
+id	string	Yes	Unique hotspot identifier.
+name	string	Yes	Display name (shown on hover/click).
+roomId	string	Yes	Must match the room this hotspot belongs to.
+bounds	{x,y,width,height}	Yes	Clickable rectangle in room coordinates.
+polygon	{x,y}[]	No	Non-rectangular clickable shape. Overrides bounds for hit detection when provided.
+description	string	No	Text shown when the player looks at it.
+verbHandlers	object	No	Maps verb names to script names.
+useWithHandlers	object	No	Maps item IDs to script names for "use X on Y" interactions.
+fallbackScriptId	string	No	Catch-all script for unhandled verbs.
+standPoint	{x,y}	No	Where the player walks to before interacting.
+approachDirection	string	No	Direction the player faces at the stand point.
+visibilityCondition	ConditionExpression	No	Hotspot is only visible when condition is true.
+interactionCondition	ConditionExpression	No	Hotspot is visible but not interactable unless condition is true.
+zLayer	"behind" | "normal" | "front"	No	Rendering layer. Default "normal".
+Dialogue Fields
+Field	Type	Required	Description
+id	string	Yes	Unique tree identifier. Referenced by actor dialogueId or ctx.startDialogue().
+name	string	Yes	Human-readable name.
+actorId	string	No	The NPC this dialogue belongs to.
+startNodeId	string	Yes	ID of the first node in the conversation.
+nodes	array	Yes	Array of dialogue node objects.
+onStartFlag	string	No	Flag name automatically set to true when this dialogue starts.
+onEndFlag	string	No	Flag name automatically set to true when this dialogue ends.
+Dialogue Node Fields
+Field	Type	Required	Description
+id	string	Yes	Unique within the tree.
+speaker	string	Yes	Actor ID of who is speaking. Must be a valid actor id (not a display name). The engine uses this to position the speech bubble above the correct actor.
+text	string	Yes	What the speaker says.
+branches	array	Yes	Player response choices. Empty array [] = NPC statement only (pauses for click, then advances). Always provide this field — use [] for click-to-advance nodes. Nodes with branches: [] and no remaining valid sibling nodes end the dialogue.
+actions	array	No	Side effects when this node is reached. Actions run in order, synchronously. If omitted, no side effects occur. Actions cannot fail — invalid references are silently skipped.
+condition	string | ConditionExpression	No	Node is skipped when condition is false. Can be a flag name string (shorthand for {"type":"flag","flag":"..."}) or a full ConditionExpression object.
+once	boolean	No	If true, the node is skipped after the player has seen it once. The engine falls through to the next node in the nodes array whose conditions are met. This fallthrough is guaranteed — the engine iterates forward through the array until it finds a valid node.
+portrait	string	No	Asset path overriding the speaker's default portrait for this line.
+Dialogue Branch Fields
+Field	Type	Required	Description
+id	string	Yes	Unique within the node.
+text	string	Yes	Text shown as a player choice.
+nextNodeId	string | null	Yes	Node to go to next. null = end dialogue.
+condition	string | ConditionExpression	No	Branch is hidden when condition is false. Can be a flag name string or a full ConditionExpression object.
+once	boolean	No	If true, the branch is hidden after the player has chosen it once.
+Dialogue Action Types
+Type	Fields	Description
+"setFlag"	flag, flagValue	Set a boolean flag.
+"giveItem"	itemId, actorId	Give an item to an actor.
+"removeItem"	itemId, actorId	Remove an item from inventory.
+"gotoRoom"	roomId, spawnPointId	Transition to a room.
+"setVariable"	variable, value	Set a game variable.
+"callScript"	scriptId	Execute a script by name.
+"setObjectState"	objectId, key, value	Change an object's state key.
+"endDialogue"	(none)	End the conversation.
+ConditionExpression
+
+Conditions are used by visibilityCondition, interactionCondition,stateWatchers, visual script "if" steps, and dialoguecondition fields. Each is a JSON object with a type discriminator. Conditions can be composed with and, or, and not.
+Type	Fields	Description
+"flag"	flag, value? (default true)	True when the flag equals the given value. E.g. {"type":"flag","flag":"door_unlocked"}.
+"variable"	variable, operator, value	Compare a variable. Operators: ==, !=, >, <, >=, <=. E.g. {"type":"variable","variable":"coins","operator":">=","value":5}.
+"inventory"	actorId, itemId	True when the actor has the item. E.g. {"type":"inventory","actorId":"player","itemId":"lantern"}.
+"objectState"	objectId, key, value, operator?	True when an object's state key matches. Default operator is ==.
+"roomVisited"	roomId	True when the player has visited the specified room.
+"dialogueNodeSeen"	treeId, nodeId	True when a specific dialogue node has been displayed.
+"hasTag"	objectId, tag	True when the object has the specified tag.
+"and"	conditions (array)	True when ALL sub-conditions are true.
+"or"	conditions (array)	True when ANY sub-condition is true.
+"not"	condition (single)	Inverts a condition.
+
+Composed example — object visible only when the player has a lantern AND a flag is set:
+
+{
+  "visibilityCondition": {
+    "type": "and",
+    "conditions": [
+      {"type": "flag", "flag": "secret_revealed"},
+      {"type": "inventory", "actorId": "player", "itemId": "lantern"}
+    ]
+  }
+}
+
+State Watchers
+
+State watchers are project-level monitors that automatically trigger a script when a condition becomes true. They are evaluated after every state change. Useful for win conditions, multi-flag puzzles, or ambient events.
+
+{
+  "stateWatchers": [
+    {
+      "id": "win_condition",
+      "condition": {
+        "type": "and",
+        "conditions": [
+          {"type": "flag", "flag": "dragon_defeated"},
+          {"type": "inventory", "actorId": "player", "itemId": "crown"}
+        ]
+      },
+      "scriptId": "victory_cutscene",
+      "once": true
+    }
+  ]
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique watcher identifier.
+condition	ConditionExpression	Yes	The condition to monitor (any ConditionExpression).
+scriptId	string	Yes	Script to execute when the condition becomes true.
+once	boolean	No	If true, the watcher fires only once and is then disabled.
+Interaction Resolution Order
+
+When the player interacts with an entity, the engine resolves the handler in this order:
+
+    useWithHandlers — if the player is using an inventory item on the target, and the target has a useWithHandlers entry mapping that item ID to a script.
+    verbHandlers — the verb-specific handler on the target entity (e.g. "open": "open_chest").
+    Entity fallbackScriptId — the target entity's catch-all fallback script.
+    globalFallbackScriptId — the project-level fallback script.
+    Default engine text — generic text like "That doesn't work."
+
+The useWithHandlers approach is preferred over checking ctx.secondaryTargetIdin a raw script because it is declarative, easier for LLMs to generate correctly, and automatically provides proper "that doesn't work" fallback messages.
+Asset Definition
+
+Assets are images or audio embedded directly in the project file as Base64 data URLs. When generating a project without actual image files, set assets to an empty array [] — the engine renders placeholder graphics for all missing images (colored rectangles for backgrounds, silhouettes for actors, etc.).
+
+{
+  "id": "bg_tavern",
+  "name": "tavern_background.png",
+  "dataUrl": "data:image/png;base64,iVBORw0KGgo...",
+  "type": "background",
+  "width": 640,
+  "height": 360
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique asset identifier.
+name	string	Yes	Original filename.
+dataUrl	string	Yes	Full Base64 data URL.
+type	string	Yes	One of: "background", "sprite", "icon", "audio", "other".
+width	number	Yes	Image width in pixels (0 for audio).
+height	number	Yes	Image height in pixels (0 for audio).
+How References Connect
+
+Understanding how IDs reference each other is critical for generating valid projects:
+
+    startingRoom must match a room's id.
+    defaultPlayerActorId must match an actor's id (one with isPlayer: true).
+    Room objectIds must match object id values. Each referenced object must have roomId matching the room.
+    Room actorIds ↔ Actor defaultRoomId (dual reference): Both sides are required for an NPC to appear. The room must list the actor ID in actorIds, AND the actor must set defaultRoomId to that room's ID. If either side is missing, the NPC will not be instantiated.
+    Exit targetRoomId must match another room's id.
+    Exit targetSpawnPointId must match a spawn point id in the target room.
+    Walkbox adjacentIds must match walkbox id values within the same room.
+    verbHandlers values must match script name values.
+    Room onEnter/onExit must match script name values.
+    Actor dialogueId must match a dialogue tree id.
+    Hotspot roomId must match the room's id it belongs to.
+    startingItems must match item id values.
+    On objects/actors/hotspots, useWithHandlers keys must match item id values; values must match script name values. On items, useWithHandlers keys must match target entity id values.
+    fallbackScriptId values must match script name values.
+    globalFallbackScriptId must match a script name.
+    State watcher scriptId values must match script name values.
+    Dialogue tree onStartFlag/onEndFlag are auto-set flag names (do not need to be pre-declared).
+
+Generation Guidelines for LLMs
+
+    Start with the game design: Decide on rooms, characters, objects, and puzzle flow before generating JSON.
+    Use snake_case for all IDs (room IDs, actor IDs, object IDs, script names, etc.).
+    Every room needs at least one walkbox covering the walkable ground area, typically Y range 220–355 for a 640×360 room.
+    Every room should have a "default" spawn point inside a walkbox polygon.
+    Connect rooms bidirectionally: If Room A has an exit to Room B, Room B should have an exit back to Room A with a matching spawn point.
+    Player position must be inside a walkbox — both defaultPlayerPosition and all spawn points.
+    Leave assets as an empty array: The engine draws colored placeholders when no art is provided. This means generated projects are instantly playable without any image files.
+    Script bodies are JavaScript strings. Use semicolons. For async calls, use await. Common pattern: "if (ctx.getFlag('x')) { ctx.say('done'); return; } ctx.setFlag('x', true); ctx.say('You did it!');"
+    Object bounds are relative to position. A 40x50 object at position (350, 320) should have bounds like {"x": -20, "y": -50, "width": 40, "height": 50} to center the clickable area.
+    Keep the verb list consistent. Only reference verbs in verbHandlers that appear in the top-level verbs array. The verb "walk" is handled by the engine and should never appear in verb handlers.
+    Dialogue branches with nextNodeId: null end the conversation.
+    Use flags for puzzle state. Set flags when the player solves something, check flags in scripts with ctx.getFlag() to gate progression.
+    Use useWithHandlers for "use item on object" puzzles. Map the item ID to a script on the target object: "useWithHandlers": {"brass_key": "unlock_door"}. This is preferred over checking ctx.secondaryTargetId in a raw script.
+    NPC placement requires a dual reference. For an NPC to appear in a room, the actor must have defaultRoomId set to the room's ID AND the room must list the actor's ID in its actorIds array. Omitting either side causes the NPC to be invisible. This mirrors the pattern for objects: objects need roomId AND the room's objectIds.
+
+ID Namespace Rules
+
+Understanding ID uniqueness is critical for automated generation:
+
+    IDs are unique per type, not globally. A room can have id: "entrance" and an object can also have id: "entrance" — they are in different namespaces. However, two rooms cannot share the same ID.
+    Script names share no namespace with entity IDs. A script named "entrance" does not conflict with a room or object named "entrance".
+    Dialogue node IDs are local to their dialogue tree. Two different trees can both have a node with id: "intro".
+    Spawn point IDs are local to their room. Two different rooms can both have a spawn point with id: "default".
+    Walkbox IDs are local to their room.
+    Exit IDs are local to their room.
+    Branch IDs are local to their dialogue node.
+    Watcher IDs are global (project-level).
+    Recommended format: snake_case (e.g. rusty_key, dark_cave). No spaces allowed in IDs.
+    Case-sensitive: "tavern" and "Tavern" are different IDs.
+    Allowed characters: Letters, digits, underscores, hyphens. Avoid special characters.
+
+Importer Strictness / Validation Policy
+
+The importer is intentionally lenient to make LLM generation easier:
+
+    Unknown fields are ignored. Extra properties on any object are silently discarded. You can include notes, comments, or metadata fields without causing errors.
+    Missing optional fields are auto-filled with defaults. If you omit visible on an object, it defaults to true. If you omit uiSettings, all UI elements are enabled.
+    Empty arrays are acceptable for all collection fields. "objects": [] is valid. Omitting the field entirely is also acceptable for optional collections (e.g. dialogueTrees, stateWatchers).
+    Script references are checked at runtime only. If a verbHandlers entry points to a script name that does not exist, the import succeeds — the error only surfaces when that verb is triggered during gameplay.
+    No line-specific error reporting. Validation errors are reported as generic messages (e.g. "Missing required field: startingRoom"), not with JSON line numbers.
+    Required fields that are missing cause an import rejection with a message naming the missing field.
+    Top-level array order does not matter. You can list scripts before rooms or vice versa.
+
+Inventory Semantics
+
+The inventory system has the following rules:
+
+    Inventory belongs to any actor, not just the player. NPCs can hold items too. All inventory methods (ctx.giveItem, ctx.removeItem, ctx.hasItem) require an actorId parameter. Use the player actor's ID (typically "player") for the player's inventory.
+    useWithHandlers does NOT auto-consume items. When a script runs via useWithHandlers, the item remains in the player's inventory. You must call ctx.removeItem('player', 'item_id') explicitly in the script if you want the item to be consumed.
+    No capacity limit. An actor can hold any number of items. There is no built-in maximum.
+    Item order does not matter for game logic. The inventory bar displays items in the order they were added.
+    No built-in inventory verbs. There are no special verbs like "combine" or "examine" that automatically apply to inventory items. Use verbHandlers on the item definition for look/use/etc.
+    Inventory bar visibility is controlled by uiSettings.inventoryEnabled (default true).
+    ctx.hasItem(actorId, itemId) checks whether an actor currently holds an item. Always requires both actorId and itemId.
+    Collectible world objects should be defined as both an object (for the in-world representation) and an item (for the inventory representation). When the player picks up the object, use ctx.state.setObjectLocation(objectId, null) to remove it from the room and ctx.giveItem(actorId, itemId) to add it to inventory.
+
+Verb Model & Interaction Resolution
+
+The engine supports these verbs: walk, look, open, close, pickup, use, talk, push, pull, give.
+
+    walk is the only engine-built-in verb. It is handled entirely by the engine (pathfinding + movement). Never add "walk" to verbHandlers.
+    All other verbs are optional. A verb only fires if it appears in the project's top-level verbs array. If you omit "push" from the array, the push verb button will not appear and players cannot push anything.
+    Standard verb set: The engine defines 10 verb strings (walk, look, open, close, pickup, use, talk, push, pull, give). The verbHandlers maps accept only these verbs as keys. Custom verb names beyond this set are not recognized by the standard interaction pipeline.
+    "use item on target" is a distinct pathway from plain "use". When the player uses an inventory item on a target, the engine checks useWithHandlers first (keyed by item ID). If not matched, it falls through to the "use" verbHandler, then the fallback chain.
+    Entities without any handlers are valid. The engine provides default responses for unhandled verbs (e.g. "It's a [name]." for look, "That doesn't work." for others).
+
+Resolution order for all entity types (objects, actors, hotspots, items):
+
+    useWithHandlers[itemId] — if the player is using an inventory item on the target
+    verbHandlers[verb] — the verb-specific handler
+    fallbackScriptId — the entity's catch-all script
+    globalFallbackScriptId — the project-level catch-all
+    Default engine text — generic messages like "That doesn't work."
+
+Exits do not support verb handlers or fallback scripts. Exits only respond to walk (triggers room transition) and look (shows "It leads somewhere."). All other verbs on exits return "You can't do that there."
+Fallback Behavior
+
+    Entity types supporting fallbackScriptId: objects, actors, hotspots, items. NOT exits.
+    Fallback is always optional. If omitted, the engine tries the globalFallbackScriptId next, then default text.
+    globalFallbackScriptId is optional. If omitted, the engine falls through to its built-in default text responses.
+    Missing fallback is valid. It simply means the engine uses its default responses for unhandled verbs.
+    Fallback scripts receive full context: ctx.verb, ctx.currentTargetId, ctx.currentTargetType, and ctx.secondaryTargetId are all available. The script can inspect which verb was attempted and respond accordingly.
+
+Cross-Entity useWithHandlers Support
+
+Not all entity types support useWithHandlers. Here is the support matrix:
+Target Entity	useWithHandlers	Key Meaning
+Object	Supported	Keys are item IDs → scripts run when that item is used on this object
+Actor	Supported	Keys are item IDs → scripts run when that item is used on this actor
+Hotspot	Supported	Keys are item IDs → scripts run when that item is used on this hotspot
+Item	Supported	Keys are target entity IDs → scripts run when this item is used on that target
+Exit	Not supported	Exits do not have verb handlers or useWithHandlers
+
+Item-on-actor is supported (e.g. give gold coin to guard). Item-on-hotspot is supported. Item-on-exit is NOT supported — the engine does not check useWithHandlers for exit targets.
+Watcher Evaluation Details
+
+State watchers are evaluated at specific times, not continuously:
+
+    Evaluated after every state change: flag set, variable set, inventory add/remove. Watchers are NOT evaluated every frame — they only fire in response to actual state mutations.
+    once: false watchers re-fire every time the condition becomes true again. If a watcher condition becomes true, fires, then becomes false, then becomes true again — the script runs again.
+    once: true watchers fire exactly once and are permanently disabled after firing.
+    scriptId points to a script name, not a script id (scripts do not have id fields — they are identified by name).
+    Watchers cannot trigger dialogue directly. They can only run scripts. Use a script that calls await ctx.startDialogue('tree_id') if you need a watcher to start a conversation.
+    Execution order follows registration order (the order watchers appear in the stateWatchers array).
+    Watchers use id only (no name field). Watcher IDs must be unique within the project.
+    No enabled, runOnLoad, cooldown, or priority fields. Watchers are always active (unless once: true and already fired). There is no cooldown or priority system. Scripts can dynamically register/unregister watchers via ctx.registerWatcher() and ctx.unregisterWatcher() at runtime.
+
+Endgame / Cutscene Behavior
+
+    There is no formal endGame API. The engine has no built-in win or lose state.
+    To implement a win/lose screen: Use a state watcher with the win condition, and have it trigger a script that calls ctx.lockInput() (or ctx.beginCutscene()) followed by blocking dialogue with the ending message. Input remains locked — the game effectively ends.
+    Cutscenes are just scripts that lock input. Use beginCutscene/endCutscene visual script steps, or ctx.lockInput()/ctx.unlockInput() in raw scripts.
+    Room transitions are allowed during cutscenes. You can move the player to a different room while input is locked.
+    There is no win-state field on the project schema. All win/lose logic lives in scripts and watchers.
+
+Placeholder Rendering Rules
+
+When no art assets are provided (i.e. assets: []), the engine renders colored placeholders for all visual entities. Here are the sizing and rendering rules:
+
+    Actors: Drawn as colored silhouettes. Size is determined by spriteWidth and spriteHeight. If omitted, defaults to ~40x60 pixels. Recommended: always provide dimensions for correct sizing.
+    Objects: Drawn as colored rectangles. Size is determined by spriteWidth and spriteHeight. If omitted, defaults to a small square. Recommended: always provide dimensions.
+    Items: Drawn as small colored squares in the inventory bar. No icon dimensions are needed — the engine auto-sizes inventory icons.
+    Room backgrounds: backgroundPath: "" is valid and renders a gradient placeholder. An empty string and a missing/nonexistent path behave identically — both produce the placeholder gradient.
+    Placeholder colors are auto-assigned by entity type (actors get one color family, objects another, etc.). Colors are not configurable in the project file.
+    Exits, hotspots, and spawn points are invisible in gameplay and do not have placeholder graphics (they are shown in the editor only with debug overlays).
+
+String Limits & Text Formatting
+
+    No enforced maximum length for names, dialogue text, script names, IDs, or descriptions. Practical limits depend on available screen space.
+    Line breaks (\n) are supported in dialogue text and descriptions. They render as actual line breaks in speech bubbles and message displays.
+    No special markup, rich text, color tags, or variable interpolation. Text is rendered as plain text. Emphasis, bold, or colored text is not available.
+    Standard JSON escaping rules apply: Double quotes must be escaped as \" in JSON strings. Backslashes must be escaped as \\. In script body strings, this means a dialogue quote needs double-escaping: ctx.say('He said \\"hello\\".');
+    Apostrophes and single quotes do not need special handling in JSON strings. In script bodies, use single quotes for JavaScript strings to avoid double-quote conflicts: ctx.say('It\\'s locked.');
+
+Room Visit Tracking
+
+    Room visits are tracked automatically by the engine. There is no need to set flags manually when entering a room.
+    roomVisited is a valid ConditionExpression type. Use {"type": "roomVisited", "roomId": "cave"} in conditions.
+    ctx.state.hasVisitedRoom(roomId) is available in raw scripts and returns true if the player has been to that room before.
+    First-visit logic should use the built-in visit tracking, not custom flags. Common pattern: "if (ctx.state.hasVisitedRoom('cave')) return; // first-visit-only code here"
+
+Decorative vs Interactive Objects
+
+    Purely decorative objects need no handlers. An object with no verbHandlers, no useWithHandlers, and no fallbackScriptId is valid. The engine provides default responses for all verbs.
+    Disabled objects (enabled: false) still render but cannot be clicked or interacted with.
+    Invisible objects (visible: false) are not drawn and cannot be interacted with. They are completely hidden from the player.
+    Objects can disappear after interaction by calling ctx.state.setObjectLocation(objectId, null) in a script, which removes the object from all rooms.
+    Objects can move between rooms by calling ctx.state.setObjectLocation(objectId, newRoomId).
+
+Hotspot Full Schema
+
+Hotspots are invisible interaction zones within rooms. They differ from objects in that they have no visual representation — they are clickable rectangular or polygonal regions. They do not participate in placeholder rendering.
+
+{
+  "id": "fireplace",
+  "name": "Fireplace",
+  "roomId": "tavern",
+  "bounds": {"x": 500, "y": 100, "width": 120, "height": 160},
+  "description": "A roaring fireplace warms the room.",
+  "verbHandlers": {
+    "look": "look_fireplace",
+    "use": "use_fireplace"
+  },
+  "useWithHandlers": {
+    "kindling": "light_fire_with_kindling"
+  },
+  "fallbackScriptId": "fireplace_fallback",
+  "standPoint": {"x": 550, "y": 330},
+  "approachDirection": "N"
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique within the room (not globally).
+name	string	Yes	Display name shown on hover.
+roomId	string	Yes	Must match the room this hotspot belongs to.
+bounds	{x,y,width,height}	Yes	Clickable rectangle in room coordinates (absolute, not relative).
+polygon	{x,y}[]	No	Optional polygon shape (overrides bounds for click detection).
+description	string	No	Text shown for unhandled look verbs.
+verbHandlers	object	No	Maps verb names to script names.
+useWithHandlers	object	No	Maps item IDs to script names for "use item on hotspot" interactions.
+fallbackScriptId	string	No	Catch-all script for unhandled verbs.
+visibilityCondition	ConditionExpression	No	Hotspot is only active when condition is true.
+interactionCondition	ConditionExpression	No	Hotspot is visible but not interactable unless condition is true.
+standPoint	{x,y}	No	Where the player walks to before interacting.
+approachDirection	string	No	Direction the player faces at the stand point.
+Spawn Point Schema
+
+{
+  "id": "from_tavern",
+  "x": 100,
+  "y": 340,
+  "facing": "E"
+}
+
+Field	Type	Required	Description
+id	string	Yes	Unique within the room. Convention: use "default" for the primary spawn, "from_[room_name]" for directional entries.
+x	number	Yes	X position in room coordinates. Must be inside a walkbox polygon.
+y	number	Yes	Y position in room coordinates. Must be inside a walkbox polygon.
+facing	string	No	Direction the actor faces after spawning. Valid values: "N", "NE", "E", "SE", "S", "SW", "W", "NW". If omitted, actor keeps current facing. When specified on an exit's targetSpawnPointId, the spawn point's facing overrides the actor's previous facing.
+
+The actor is placed at the exact spawn point coordinates — no "nearest walkable position" snapping occurs. This is why it is critical that spawn points be inside walkbox polygons.
+Object/Actor State Systems
+
+    Objects have a freeform state object (key-value pairs) that can be read and modified by scripts via ctx.state.getObjectState(objectId, key) and ctx.state.setObjectState(objectId, key, value). This is separate from flags — object state is local to the object.
+    Object state can change appearance via stateSprites. Each entry maps a stateKey+stateValue pair to a spritePath. When the state matches, the object renders with that sprite.
+    Actors do not have a freeform state system. Use global flags to track actor-related state (e.g. guard_bribed).
+    Rooms support room-scoped variables via ctx.setRoomVar(roomId, key, value) / ctx.getRoomVar(roomId, key). These are separate from global flags and variables.
+    visible and enabled are direct booleans, not state-driven. They can be toggled by scripts and by visibilityCondition/interactionCondition.
+
+Dialogue Tree Additional Details
+
+    Dialogue trees use both id and name. The id is used for references (dialogueId on actors, ctx.startDialogue()). The name is a human-readable label.
+    actorId is optional on dialogue trees. It associates the tree with an NPC for editor organization, but is not required for the tree to function.
+    Multiple dialogue trees per actor are supported. An actor can have multiple trees; dialogueId on the actor definition specifies the default tree for the talk verb. Other trees can be started via scripts with ctx.startDialogue().
+    Narration without a speaker is not directly supported — every node must have a speaker field with a valid actor ID. For narration, use the player actor as the speaker.
+    text supports line breaks (\n) but no markup, variables, or interpolation.
+    Nodes do not have a nextNodeId field. Flow is controlled by branch nextNodeId values. Click-to-advance nodes (empty branches) advance to the next node in the array that passes its conditions.
+    Branches do not have actions. Side effects are on nodes only (via the actions array). Put actions on the destination node, not on the branch.
+    once: true is valid on both nodes and branches. On nodes, the node is skipped on repeat visits. On branches, the choice disappears after being selected once.
+    onStartFlag and onEndFlag are plain flag name strings — not action objects. The engine auto-sets these flags to true when the dialogue starts/ends.
+    No automatic return to a hub node. You must manually structure branches to point back to a hub node ID for conversation loops.
+
+Common Pitfalls
+
+    Spawn outside walkbox: If a spawn point is outside all walkboxes, the player cannot move. Always place spawns within walkbox polygons.
+    One-way exits: Forgetting the return exit traps the player in a room. Always create both directions.
+    Missing scripts: Every script name referenced in verbHandlers, onEnter, onExit must have a matching entry in the scripts array.
+    "walk" in verbHandlers: The "walk" verb is handled by the engine automatically. Never add it to verbHandlers.
+    Duplicate IDs: All IDs (rooms, actors, objects, items, scripts) must be unique across their type.
+    Object without roomId: Objects listed in a room's objectIds must have roomId set to that room's ID.
+    NPC missing from room's actorIds: Setting defaultRoomId on an actor is NOT enough — the target room must also list the actor's ID in its actorIds array. Without this, the engine will never instantiate the NPC. This is a dual reference, analogous to objects needing both roomId and the room's objectIds.
+    Items not consumed automatically: useWithHandlers does NOT remove the item from inventory. Call ctx.removeItem() explicitly in the script.
+    Inventory requires actorId: Always pass the actor ID (e.g. "player") to ctx.giveItem, ctx.removeItem, ctx.hasItem.
+
+Minimal Complete Example
+
+A two-room adventure with a key puzzle:
+
+{
+  "formatVersion": 2,
+  "id": "generated",
+  "title": "The Locked Door",
+  "created": 1700000000000,
+  "modified": 1700000000000,
+  "startingRoom": "hallway",
+  "defaultPlayerActorId": "player",
+  "defaultPlayerPosition": {"x": 160, "y": 315},
+  "startingItems": [],
+  "verbs": ["walk", "look", "open", "pickup", "use", "talk"],
+  "rooms": [
+    {
+      "id": "hallway",
+      "name": "Hallway",
+      "backgroundPath": "",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "floor",
+          "polygon": [
+            {"x": 24, "y": 270}, {"x": 616, "y": 270},
+            {"x": 616, "y": 356}, {"x": 24, "y": 356}
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [],
+      "hotspots": [],
+      "spawnPoints": [{"id": "default", "x": 160, "y": 315}],
+      "objectIds": ["key", "locked_door"],
+      "onEnter": "enter_hallway"
+    },
+    {
+      "id": "treasure_room",
+      "name": "Treasure Room",
+      "backgroundPath": "",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "floor",
+          "polygon": [
+            {"x": 24, "y": 270}, {"x": 616, "y": 270},
+            {"x": 616, "y": 356}, {"x": 24, "y": 356}
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "back_to_hallway",
+          "direction": "W",
+          "bounds": {"x": 0, "y": 243, "width": 32, "height": 117},
+          "targetRoomId": "hallway",
+          "targetSpawnPointId": "default",
+          "label": "Back"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [{"id": "from_hallway", "x": 80, "y": 315}],
+      "objectIds": ["treasure_chest"],
+      "onEnter": "enter_treasure_room"
+    }
+  ],
+  "actors": [
+    {
+      "id": "player",
+      "name": "You",
+      "isPlayer": true,
+      "position": {"x": 160, "y": 315},
+      "facing": "E",
+      "movementSpeed": 130,
+      "spriteWidth": 40,
+      "spriteHeight": 60
+    }
+  ],
+  "objects": [
+    {
+      "id": "key",
+      "name": "Brass Key",
+      "roomId": "hallway",
+      "position": {"x": 480, "y": 306},
+      "spriteWidth": 24,
+      "spriteHeight": 16,
+      "bounds": {"x": -12, "y": -16, "width": 24, "height": 16},
+      "visible": true,
+      "enabled": true,
+      "pickupable": true,
+      "description": "A small brass key.",
+      "verbHandlers": {
+        "look": "look_key",
+        "pickup": "pickup_key"
+      }
+    },
+    {
+      "id": "locked_door",
+      "name": "Heavy Door",
+      "roomId": "hallway",
+      "position": {"x": 560, "y": 252},
+      "spriteWidth": 50,
+      "spriteHeight": 100,
+      "bounds": {"x": -25, "y": -100, "width": 50, "height": 100},
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A heavy wooden door with a brass lock.",
+      "verbHandlers": {
+        "look": "look_door",
+        "open": "open_door"
+      },
+      "useWithHandlers": {
+        "brass_key": "unlock_door_with_key"
+      },
+      "fallbackScriptId": "default_door_response"
+    },
+    {
+      "id": "treasure_chest",
+      "name": "Treasure Chest",
+      "roomId": "treasure_room",
+      "position": {"x": 400, "y": 279},
+      "spriteWidth": 64,
+      "spriteHeight": 48,
+      "bounds": {"x": -32, "y": -48, "width": 64, "height": 48},
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A gleaming treasure chest!",
+      "verbHandlers": {
+        "look": "look_treasure",
+        "open": "open_treasure"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "brass_key",
+      "name": "Brass Key",
+      "description": "A small brass key. It looks like it fits a door."
+    },
+    {
+      "id": "gold_coins",
+      "name": "Gold Coins",
+      "description": "A handful of gleaming gold coins!"
+    }
+  ],
+  "scripts": [
+    {
+      "name": "enter_hallway",
+      "body": "if (!ctx.state.hasVisitedRoom('hallway')) { ctx.say('You find yourself in a dim hallway. A heavy door blocks the way east.'); }"
+    },
+    {
+      "name": "enter_treasure_room",
+      "body": "if (!ctx.state.hasVisitedRoom('treasure_room')) { ctx.say('The room glitters with gold!'); }"
+    },
+    {
+      "name": "look_key",
+      "body": "ctx.say('A small brass key lying on the floor.');"
+    },
+    {
+      "name": "pickup_key",
+      "body": "ctx.giveItem('player', 'brass_key'); ctx.say('You pick up the brass key.'); ctx.state.setObjectLocation('key', null);"
+    },
+    {
+      "name": "look_door",
+      "body": "ctx.say(ctx.getFlag('door_unlocked') ? 'The door is unlocked.' : 'A heavy wooden door with a brass lock.');"
+    },
+    {
+      "name": "open_door",
+      "body": "if (!ctx.getFlag('door_unlocked')) { ctx.say('It is locked. You need a key.'); return; } ctx.gotoRoom('treasure_room', 'from_hallway');"
+    },
+    {
+      "name": "unlock_door_with_key",
+      "body": "ctx.setFlag('door_unlocked', true); ctx.removeItem('player', 'brass_key'); ctx.say('The key turns! The door is now unlocked.');"
+    },
+    {
+      "name": "default_door_response",
+      "body": "ctx.say('The heavy door does not respond to that.');"
+    },
+    {
+      "name": "look_treasure",
+      "body": "ctx.say('A magnificent treasure chest overflowing with gold coins!');"
+    },
+    {
+      "name": "open_treasure",
+      "body": "if (ctx.getFlag('treasure_taken')) { ctx.say('The chest is empty.'); return; } ctx.setFlag('treasure_taken', true); ctx.giveItem('player', 'gold_coins'); ctx.say('You scoop up handfuls of gold coins! You win!');"
+    }
+  ],
+  "assets": [],
+  "dialogueTrees": []
+}

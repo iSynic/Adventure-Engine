@@ -1,0 +1,675 @@
+Creating a Project from a Prompt
+
+This section is a comprehensive guide for generating a complete.advproject.json file from a natural-language game description. It is designed so that an LLM (or a code generator) reading this documentation can produce a valid, playable adventure game project that can be imported directly into the editor via "Import JSON".
+
+For the full JSON schema reference, see the Project File Spec section. This section focuses on the generative process — how to translate a game concept into a well-structured project file.
+Step 1: Design the Game World
+
+Before generating JSON, plan the game's structure:
+
+    List all rooms — each distinct location the player can visit (e.g., "Tavern", "Town Square", "Dark Cave").
+    Map connections — which rooms connect to which, and from which edges. Connections should be bidirectional: if Room A exits east to Room B, Room B should exit west back to Room A.
+    Identify actors — the player character (always one, with isPlayer: true) and any NPCs.
+    List objects — interactable things in each room (doors, chests, levers, etc.).
+    List items — things the player can carry in their inventory.
+    Design puzzles — what the player needs to do, in what order, to progress. Use flags to track puzzle state.
+
+Step 2: Coordinate System & Layout Rules
+
+The game viewport is defined by the project's display config. The default — and what the Bork sample uses — is 640 × 360. Origin (0,0) is top-left. X increases rightward, Y increases downward.
+Element	Typical Placement
+Sky / ceiling	Y 0–90
+Background objects (signs, windows)	Y 70–220
+Walkable ground (walkboxes)	Y 220–355
+Objects on the ground	Y 250–325 (position.y should be inside a walkbox)
+Actors	Y 270–345 (feet position inside walkbox)
+Spawn points	Y 290–340 (must be inside a walkbox polygon)
+Step 3: Room Template
+
+Every room needs at minimum: an id, name, one walkbox, and one spawn point.
+
+{
+  "id": "room_id",
+  "name": "Human-Readable Name",
+  "backgroundPath": "",
+  "width": 640,
+  "height": 360,
+  "walkboxes": [{
+    "id": "floor",
+    "polygon": [
+      {"x": 24, "y": 252}, {"x": 616, "y": 252},
+      {"x": 616, "y": 356}, {"x": 24, "y": 356}
+    ],
+    "adjacentIds": []
+  }],
+  "exits": [],
+  "hotspots": [],
+  "spawnPoints": [{"id": "default", "x": 320, "y": 306}],
+  "objectIds": [],
+  "actorIds": []
+}
+
+Step 4: Bidirectional Room Connections
+
+Every exit must be paired with a matching entry point in the target room. Follow this pattern:
+
+// Room A: exit on the east edge
+{
+  "id": "to_room_b",
+  "direction": "E",
+  "bounds": {"x": 608, "y": 234, "width": 32, "height": 126},
+  "targetRoomId": "room_b",
+  "targetSpawnPointId": "from_room_a",
+  "label": "Go East"
+}
+
+// Room B: spawn point on the west side + exit back
+// Spawn point:
+{"id": "from_room_a", "x": 64, "y": 306, "facing": "E"}
+// Exit back:
+{
+  "id": "to_room_a",
+  "direction": "W",
+  "bounds": {"x": 0, "y": 234, "width": 32, "height": 126},
+  "targetRoomId": "room_a",
+  "targetSpawnPointId": "from_room_b",
+  "label": "Go West"
+}
+
+Exit placement by direction:
+Direction	Typical bounds
+North	{"x": 240, "y": 0, "width": 160, "height": 36}
+South	{"x": 240, "y": 324, "width": 160, "height": 36}
+East	{"x": 608, "y": 225, "width": 32, "height": 135}
+West	{"x": 0, "y": 225, "width": 32, "height": 135}
+Step 5: Script Patterns
+
+Scripts are JavaScript strings with access to ctx (ScriptContext). Common patterns:
+
+// Simple look description
+"ctx.say('A dusty old bookshelf filled with leather-bound tomes.');"
+
+// One-time pickup with flag guard
+"if (ctx.getFlag('took_gem')) { ctx.say('Nothing else here.'); return; } ctx.setFlag('took_gem', true); ctx.giveItem('player', 'ruby_gem'); ctx.say('You pocket the ruby gem.');"
+
+// Room enter cutscene (first visit only)
+"if (ctx.state.hasVisitedRoom('cave')) return; ctx.lockInput(); await ctx.sayBlocking('player', 'It is dark in here...'); ctx.unlockInput();"
+
+// NPC talk handler that starts a dialogue tree
+"await ctx.startDialogue('merchant_chat');"
+
+Step 5b: "Use Item on Object" — Preferred Approach
+
+For puzzles where the player uses an inventory item on something (e.g. use key on door), use useWithHandlers on the target object definition instead of writing raw script code. This is declarative and the engine handles fallback messages automatically.
+
+// On the object definition (JSON):
+{
+  "id": "locked_chest",
+  "name": "Locked Chest",
+  "verbHandlers": {"look": "look_chest", "open": "try_open_chest"},
+  "useWithHandlers": {
+    "silver_key": "unlock_chest_with_key"
+  },
+  "fallbackScriptId": "chest_fallback"
+}
+
+// The unlock script is simple — no need to check secondaryTargetId:
+{
+  "name": "unlock_chest_with_key",
+  "body": "ctx.setFlag('chest_unlocked', true); ctx.removeItem('player', 'silver_key'); ctx.say('The chest clicks open!');"
+}
+
+The engine automatically checks useWithHandlers first when the player uses an item on a target. If the item is not in the map, it falls back to the"use" verb handler, then the entity's fallbackScriptId, then the project's globalFallbackScriptId.
+Step 6: Dialogue Tree Patterns
+
+Dialogue trees are conversations with NPCs. Key rules:
+
+    Set startNodeId to the first node's ID.
+    Branches with nextNodeId: null end the conversation.
+    Nodes with empty branches: [] are click-to-advance (no player choice).
+    Use condition on branches to reveal options based on flags (a string flag name or a ConditionExpression object).
+    Use once: true on a branch to hide it after it has been chosen once. Great for "Ask about X" options that should disappear after the topic is exhausted.
+    Use once: true on a node for intro lines that only play on the first conversation. The engine falls through to the next valid node.
+    Use actions on nodes to set flags, give/remove items, change rooms, set variables, call scripts, or set object state.
+    Use onStartFlag and onEndFlag on the dialogue tree to auto-set flags when conversations start/end.
+
+// Example: once-only branch and node
+{
+  "id": "guard_chat",
+  "name": "Guard Conversation",
+  "actorId": "guard",
+  "startNodeId": "intro",
+  "onEndFlag": "talked_to_guard",
+  "nodes": [
+    {
+      "id": "intro",
+      "speaker": "guard",
+      "text": "Halt! State your business.",
+      "once": true,
+      "branches": [],
+      "actions": []
+    },
+    {
+      "id": "main",
+      "speaker": "guard",
+      "text": "What do you want now?",
+      "branches": [
+        {
+          "id": "ask_about_key",
+          "text": "Do you know where the key is?",
+          "nextNodeId": "key_info",
+          "once": true
+        },
+        {
+          "id": "ask_passage",
+          "text": "Can I pass?",
+          "nextNodeId": "passage_check",
+          "condition": {"type": "flag", "flag": "knows_password"}
+        },
+        {
+          "id": "bye",
+          "text": "Never mind.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    {
+      "id": "key_info",
+      "speaker": "guard",
+      "text": "The blacksmith keeps a spare. Don't tell him I told you.",
+      "branches": [],
+      "actions": [
+        {"type": "setFlag", "flag": "knows_key_location", "flagValue": true}
+      ]
+    }
+  ]
+}
+
+Step 7: Object Bounds
+
+Object bounds are relative to the object's position. To center the clickable area, use negative offsets:
+
+// Object at position (400, 320), size 60x80
+// Bounds should center: x = -30 (half width), y = -80 (full height above feet)
+"position": {"x": 400, "y": 320},
+"spriteWidth": 60,
+"spriteHeight": 80,
+"bounds": {"x": -30, "y": -80, "width": 60, "height": 80}
+
+Step 8: Assets
+
+When generating a project from a prompt, set assets to an empty array []. The engine automatically draws colored placeholder graphics for all missing images:
+
+    Rooms get gradient backgrounds.
+    Actors get colored silhouettes.
+    Objects get colored rectangles.
+    Items get colored squares in the inventory bar.
+
+This means generated projects are instantly playable without any image files. Art can be added later by importing assets in the editor.
+Step 9: Advanced Features
+
+These features are optional but enable more sophisticated games:
+Conditional Visibility
+
+Objects, hotspots, and exits can appear or disappear based on game state usingvisibilityCondition. This is powerful for puzzle progression:
+
+// A hidden passage that only appears after pulling a lever
+{
+  "id": "secret_passage",
+  "name": "Secret Passage",
+  "roomId": "library",
+  "position": {"x": 600, "y": 280},
+  "spriteWidth": 60,
+  "spriteHeight": 100,
+  "bounds": {"x": -30, "y": -100, "width": 60, "height": 100},
+  "visible": true,
+  "enabled": true,
+  "visibilityCondition": {"type": "flag", "flag": "lever_pulled"},
+  "verbHandlers": {"open": "enter_secret_room"}
+}
+
+// An exit that is only usable after finding a key
+{
+  "id": "locked_gate",
+  "direction": "E",
+  "bounds": {"x": 608, "y": 225, "width": 32, "height": 135},
+  "targetRoomId": "garden",
+  "targetSpawnPointId": "from_courtyard",
+  "label": "Garden Gate",
+  "interactionCondition": {"type": "flag", "flag": "gate_unlocked"}
+}
+
+State Watchers
+
+Use stateWatchers at the project level to trigger scripts automatically when conditions become true. Perfect for win conditions or multi-step puzzles:
+
+"stateWatchers": [
+  {
+    "id": "all_gems_collected",
+    "condition": {
+      "type": "and",
+      "conditions": [
+        {"type": "inventory", "actorId": "player", "itemId": "red_gem"},
+        {"type": "inventory", "actorId": "player", "itemId": "blue_gem"},
+        {"type": "inventory", "actorId": "player", "itemId": "green_gem"}
+      ]
+    },
+    "scriptId": "gems_complete_cutscene",
+    "once": true
+  }
+]
+
+Visual Scripts
+
+Instead of raw JavaScript strings, you can use structured visual scripts. These are more verbose but less error-prone — no syntax errors from unmatched quotes or missing semicolons:
+
+{
+  "name": "enter_cave",
+  "kind": "visual",
+  "body": "",
+  "steps": [
+    {
+      "type": "if",
+      "condition": {"type": "roomVisited", "roomId": "cave"},
+      "thenSteps": [],
+      "elseSteps": [
+        {"type": "lockInput"},
+        {"type": "sayBlocking", "actorId": "player", "text": "It is dark in here..."},
+        {
+          "type": "if",
+          "condition": {"type": "inventory", "actorId": "player", "itemId": "lantern"},
+          "thenSteps": [
+            {"type": "say", "text": "Good thing I brought the lantern."}
+          ],
+          "elseSteps": [
+            {"type": "say", "text": "I can barely see a thing."}
+          ]
+        },
+        {"type": "unlockInput"}
+      ]
+    }
+  ]
+}
+
+Step 10: Validation Checklist
+
+Before finalizing the generated JSON, verify:
+
+    startingRoom matches a room id.
+    defaultPlayerActorId matches an actor with isPlayer: true.
+    defaultPlayerPosition is inside the starting room's walkbox.
+    All objectIds in rooms match defined object id values.
+    All actorIds in rooms match defined actor id values, and each referenced actor has defaultRoomId set to that room's ID. Both sides are required — without actorIds the NPC will not appear.
+    All exit targetRoomId values match existing room id values.
+    All exit targetSpawnPointId values match spawn points in the target room.
+    All verbHandlers values match defined script name values.
+    All onEnter/onExit/onUpdate values match defined script name values.
+    All actor dialogueId values match defined dialogue tree id values.
+    All useWithHandlers values match defined script name values.
+    All fallbackScriptId and globalFallbackScriptId values match defined script name values.
+    All state watcher scriptId values match defined script name values.
+    All spawn points and actor positions are inside walkbox polygons.
+    Rooms are connected bidirectionally (exits + matching spawn points).
+    formatVersion is set to 2.
+
+Common Pitfalls
+
+    Spawn outside walkbox: If a spawn point is outside all walkboxes, the player cannot move. Always place spawns within walkbox polygons.
+    One-way exits: Forgetting the return exit traps the player in a room. Always create both directions.
+    Missing scripts: Every script name referenced in verbHandlers, onEnter, onExit must have a matching entry in the scripts array.
+    "walk" in verbHandlers: The "walk" verb is handled by the engine automatically. Never add it to verbHandlers.
+    Duplicate IDs: All IDs (rooms, actors, objects, items, scripts) must be unique across their type.
+    Object without roomId: Objects listed in a room's objectIds must have roomId set to that room's ID.
+    NPC missing from room's actorIds: Setting defaultRoomId on an actor is NOT enough — the target room must also list the actor's ID in its actorIds array. Without this, the NPC will never appear. This is a dual reference: actor → defaultRoomId AND room → actorIds. (Analogous to how objects need both roomId and the room's objectIds.)
+    Items not consumed automatically: useWithHandlers does NOT remove the item from inventory. Call ctx.removeItem() explicitly in the script.
+    Inventory requires actorId: Always pass the actor ID (e.g. "player") to ctx.giveItem, ctx.removeItem, ctx.hasItem.
+
+Medium Valid Project Example
+
+A two-room project demonstrating: object, item, NPC with dialogue tree, state watcher,useWithHandlers, raw JS script, and visual script — all interconnected.
+
+{
+  "formatVersion": 2,
+  "id": "generated",
+  "title": "The Blacksmith's Favor",
+  "created": 1700000000000,
+  "modified": 1700000000000,
+  "startingRoom": "village_square",
+  "defaultPlayerActorId": "player",
+  "defaultPlayerPosition": {"x": 320, "y": 315},
+  "startingItems": [],
+  "verbs": ["walk", "look", "open", "pickup", "use", "talk", "give"],
+  "rooms": [
+    {
+      "id": "village_square",
+      "name": "Village Square",
+      "backgroundPath": "",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "ground",
+          "polygon": [
+            {"x": 24, "y": 252}, {"x": 616, "y": 252},
+            {"x": 616, "y": 356}, {"x": 24, "y": 356}
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_smithy",
+          "direction": "E",
+          "bounds": {"x": 608, "y": 225, "width": 32, "height": 135},
+          "targetRoomId": "smithy",
+          "targetSpawnPointId": "from_square",
+          "label": "Smithy"
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "well",
+          "name": "Village Well",
+          "roomId": "village_square",
+          "bounds": {"x": 280, "y": 135, "width": 80, "height": 108},
+          "description": "An old stone well in the center of the square.",
+          "verbHandlers": {"look": "look_well", "use": "use_well"}
+        }
+      ],
+      "spawnPoints": [
+        {"id": "default", "x": 320, "y": 315},
+        {"id": "from_smithy", "x": 560, "y": 306, "facing": "W"}
+      ],
+      "objectIds": ["herb_pouch"],
+      "onEnter": "enter_square"
+    },
+    {
+      "id": "smithy",
+      "name": "The Smithy",
+      "backgroundPath": "",
+      "width": 640,
+      "height": 360,
+      "walkboxes": [
+        {
+          "id": "floor",
+          "polygon": [
+            {"x": 24, "y": 270}, {"x": 616, "y": 270},
+            {"x": 616, "y": 356}, {"x": 24, "y": 356}
+          ],
+          "adjacentIds": []
+        }
+      ],
+      "exits": [
+        {
+          "id": "to_square",
+          "direction": "W",
+          "bounds": {"x": 0, "y": 234, "width": 32, "height": 126},
+          "targetRoomId": "village_square",
+          "targetSpawnPointId": "from_smithy",
+          "label": "Village Square"
+        }
+      ],
+      "hotspots": [],
+      "spawnPoints": [
+        {"id": "default", "x": 320, "y": 315},
+        {"id": "from_square", "x": 64, "y": 306, "facing": "E"}
+      ],
+      "objectIds": ["anvil"],
+      "actorIds": ["blacksmith"]
+    }
+  ],
+  "actors": [
+    {
+      "id": "player",
+      "name": "You",
+      "isPlayer": true,
+      "position": {"x": 320, "y": 315},
+      "facing": "E",
+      "movementSpeed": 130,
+      "spriteWidth": 40,
+      "spriteHeight": 60
+    },
+    {
+      "id": "blacksmith",
+      "name": "Blacksmith",
+      "isPlayer": false,
+      "defaultRoomId": "smithy",
+      "position": {"x": 440, "y": 297},
+      "facing": "W",
+      "movementSpeed": 80,
+      "spriteWidth": 48,
+      "spriteHeight": 64,
+      "dialogueId": "blacksmith_chat",
+      "verbHandlers": {
+        "look": "look_blacksmith"
+      },
+      "useWithHandlers": {
+        "healing_herbs": "give_herbs_to_smith"
+      },
+      "fallbackScriptId": "smith_fallback"
+    }
+  ],
+  "objects": [
+    {
+      "id": "herb_pouch",
+      "name": "Herb Pouch",
+      "roomId": "village_square",
+      "position": {"x": 160, "y": 306},
+      "spriteWidth": 24,
+      "spriteHeight": 20,
+      "bounds": {"x": -12, "y": -20, "width": 24, "height": 20},
+      "visible": true,
+      "enabled": true,
+      "pickupable": true,
+      "description": "A small leather pouch of healing herbs.",
+      "verbHandlers": {
+        "look": "look_herbs",
+        "pickup": "pickup_herbs"
+      }
+    },
+    {
+      "id": "anvil",
+      "name": "Anvil",
+      "roomId": "smithy",
+      "position": {"x": 320, "y": 306},
+      "spriteWidth": 50,
+      "spriteHeight": 40,
+      "bounds": {"x": -25, "y": -40, "width": 50, "height": 40},
+      "visible": true,
+      "enabled": true,
+      "pickupable": false,
+      "description": "A heavy iron anvil. It shows years of use.",
+      "verbHandlers": {
+        "look": "look_anvil"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "healing_herbs",
+      "name": "Healing Herbs",
+      "description": "A pouch of fragrant healing herbs.",
+      "verbHandlers": {
+        "look": "examine_herbs"
+      }
+    },
+    {
+      "id": "iron_sword",
+      "name": "Iron Sword",
+      "description": "A finely crafted iron sword, still warm from the forge.",
+      "verbHandlers": {
+        "look": "examine_sword"
+      }
+    }
+  ],
+  "scripts": [
+    {
+      "name": "enter_square",
+      "kind": "visual",
+      "body": "",
+      "description": "First visit intro using visual script",
+      "steps": [
+        {
+          "type": "if",
+          "condition": {"type": "roomVisited", "roomId": "village_square"},
+          "thenSteps": [],
+          "elseSteps": [
+            {"type": "lockInput"},
+            {"type": "sayBlocking", "actorId": "player", "text": "The village square is quiet today. I should find the blacksmith."},
+            {"type": "unlockInput"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "look_well",
+      "body": "ctx.say('An old stone well. The water looks clean.');"
+    },
+    {
+      "name": "use_well",
+      "body": "ctx.say('You splash some cool water on your face. Refreshing!');"
+    },
+    {
+      "name": "look_herbs",
+      "body": "ctx.say('A small leather pouch filled with healing herbs.');"
+    },
+    {
+      "name": "pickup_herbs",
+      "body": "ctx.giveItem('player', 'healing_herbs'); ctx.say('You pick up the herb pouch.'); ctx.state.setObjectLocation('herb_pouch', null);"
+    },
+    {
+      "name": "examine_herbs",
+      "body": "ctx.say('Fragrant healing herbs. The blacksmith might need these.');"
+    },
+    {
+      "name": "look_blacksmith",
+      "body": "ctx.say(ctx.getFlag('smith_healed') ? 'The blacksmith looks much healthier now.' : 'The blacksmith looks pale and unwell.');"
+    },
+    {
+      "name": "give_herbs_to_smith",
+      "body": "ctx.removeItem('player', 'healing_herbs'); ctx.setFlag('smith_healed', true); await ctx.sayBlocking('blacksmith', 'These herbs are exactly what I needed! Thank you!'); await ctx.sayBlocking('blacksmith', 'Take this sword as my thanks.'); ctx.giveItem('player', 'iron_sword');"
+    },
+    {
+      "name": "smith_fallback",
+      "body": "ctx.say('The blacksmith shakes his head.');"
+    },
+    {
+      "name": "look_anvil",
+      "body": "ctx.say('A heavy iron anvil, scarred from years of hammering.');"
+    },
+    {
+      "name": "examine_sword",
+      "body": "ctx.say('A beautiful iron sword. The blacksmith\'s finest work.');"
+    },
+    {
+      "name": "victory_cutscene",
+      "kind": "visual",
+      "body": "",
+      "description": "Triggered by watcher when sword is obtained",
+      "steps": [
+        {"type": "lockInput"},
+        {"type": "sayBlocking", "actorId": "player", "text": "With this sword, I can face any challenge. The blacksmith's favor has been repaid!"},
+        {"type": "say", "text": "Congratulations! You completed The Blacksmith's Favor!"}
+      ]
+    }
+  ],
+  "dialogueTrees": [
+    {
+      "id": "blacksmith_chat",
+      "name": "Blacksmith Conversation",
+      "actorId": "blacksmith",
+      "startNodeId": "intro",
+      "onEndFlag": "talked_to_smith",
+      "nodes": [
+        {
+          "id": "intro",
+          "speaker": "blacksmith",
+          "text": "Ugh... I feel terrible. Some healing herbs would do wonders.",
+          "once": true,
+          "branches": [],
+          "actions": [
+            {"type": "setFlag", "flag": "knows_herbs_needed", "flagValue": true}
+          ]
+        },
+        {
+          "id": "main",
+          "speaker": "blacksmith",
+          "text": "What can I do for you?",
+          "branches": [
+            {
+              "id": "ask_herbs",
+              "text": "Where can I find healing herbs?",
+              "nextNodeId": "herbs_hint",
+              "once": true
+            },
+            {
+              "id": "ask_sword",
+              "text": "Can you make me a sword?",
+              "nextNodeId": "sword_response"
+            },
+            {
+              "id": "bye",
+              "text": "Nothing right now. Goodbye.",
+              "nextNodeId": null
+            }
+          ]
+        },
+        {
+          "id": "herbs_hint",
+          "speaker": "blacksmith",
+          "text": "Check the village square. I saw some growing near the well.",
+          "branches": [],
+          "actions": []
+        },
+        {
+          "id": "sword_response",
+          "speaker": "blacksmith",
+          "text": "I would, but I feel too sick to work the forge. Bring me some healing herbs first.",
+          "branches": [],
+          "actions": [],
+          "condition": {"type": "not", "condition": {"type": "flag", "flag": "smith_healed"}}
+        },
+        {
+          "id": "sword_healed",
+          "speaker": "blacksmith",
+          "text": "I already gave you my finest sword! Use it well.",
+          "branches": [],
+          "actions": [],
+          "condition": {"type": "flag", "flag": "smith_healed"}
+        }
+      ]
+    }
+  ],
+  "stateWatchers": [
+    {
+      "id": "sword_obtained",
+      "condition": {
+        "type": "inventory",
+        "actorId": "player",
+        "itemId": "iron_sword"
+      },
+      "scriptId": "victory_cutscene",
+      "once": true
+    }
+  ],
+  "assets": [],
+  "uiSettings": {
+    "verbBarEnabled": true,
+    "inventoryEnabled": true,
+    "messageLogEnabled": true,
+    "showRoomTitle": true
+  },
+  "globalFallbackScriptId": "smith_fallback"
+}
+
+This example demonstrates:
+
+    NPC placement (dual reference): The blacksmith actor has defaultRoomId: "smithy" AND the smithy room has actorIds: ["blacksmith"]. Both sides are required — without actorIds, the NPC would never appear.
+    Object + Item pair: herb_pouch (world object) and healing_herbs (inventory item) — picked up via script, removed from room with setObjectLocation(null).
+    useWithHandlers: On the blacksmith actor — using the healing_herbs item on the blacksmith triggers the give_herbs_to_smith script (which removes the item explicitly).
+    Dialogue tree: Multi-node conversation with once: true intro node, conditional nodes, onEndFlag, and dialogue actions.
+    State watcher: Monitors when the player has the iron_sword and auto-triggers a victory cutscene.
+    Raw JS script: Most scripts use raw JavaScript (give_herbs_to_smith, look_blacksmith, etc.).
+    Visual script: enter_square and victory_cutscene use structured visual steps with if conditions, lockInput, and sayBlocking.
+    Hotspot: The well hotspot in the village square with verb handlers.
+    Fallback: smith_fallback serves as both the blacksmith's entity fallback and the project's global fallback.
