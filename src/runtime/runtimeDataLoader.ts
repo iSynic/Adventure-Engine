@@ -5,6 +5,7 @@ import type {
   ExportedSettings,
 } from "../shared/exportSchema";
 import type { ScriptHandlerFn } from "../engine/scripting/ScriptRunner";
+import { compileRawScript } from "./compileScript";
 
 export type DataFetcher = (url: string) => Promise<unknown>;
 
@@ -80,14 +81,13 @@ export function desktopFetcher(packageRoot: string): DataFetcher {
  * metadata stripped at export time. Visual scripts are compiled to body by
  * the editor before export, so the runtime always executes body directly.
  */
-export function compileScripts(
+export async function compileScripts(
   scriptList: ExportedScript[]
-): Record<string, ScriptHandlerFn> {
+): Promise<Record<string, ScriptHandlerFn>> {
   const compiled: Record<string, ScriptHandlerFn> = {};
   for (const script of scriptList) {
     try {
-      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-      compiled[script.name] = new AsyncFunction("ctx", script.body) as ScriptHandlerFn;
+      compiled[script.name] = await compileRawScript(script.name, script.body);
     } catch (e) {
       console.error(`[Runtime] Failed to compile script "${script.name}":`, e);
     }
@@ -115,7 +115,7 @@ export async function loadGameData(
       fetcher(manifest.data.project) as Promise<ExportedSettings>,
     ]);
 
-  const compiledScripts = compileScripts(scripts as ExportedScript[]);
+  const compiledScripts = await compileScripts(scripts as ExportedScript[]);
   const settingsData = settings as ExportedSettings;
 
   const config: GameConfig = {

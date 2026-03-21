@@ -16,6 +16,8 @@ import type {
 import type { DisplayConfig } from "./displayConfig";
 import type { OverlayConfig } from "./overlayConfig";
 import type { ValidationResult, ValidationError } from "./exportSchema";
+// acorn v8+ ships its own TypeScript types (dist/acorn.d.ts); @types/acorn is not needed.
+import * as acorn from "acorn";
 
 export interface ValidatableProject {
   id: string;
@@ -470,17 +472,6 @@ function validateScripts(
     }
   }
 
-  const AsyncFunctionCtor = Object.getPrototypeOf(async function () {}).constructor;
-  for (const script of scripts) {
-    if (script.body && script.body.trim()) {
-      try {
-        new AsyncFunctionCtor("ctx", script.body);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        errors.push({ severity: "error", message: `Script "${script.name}": syntax error — ${msg}` });
-      }
-    }
-  }
 }
 
 function validateDialogueTrees(
@@ -998,6 +989,32 @@ export function validateProject(project: ValidatableProject): ValidationResult {
   validateConditions(project, ctx);
   const valid = !errors.some((e) => e.severity === "error");
   return { valid, errors };
+}
+
+/**
+ * CSP-safe script syntax checker. Uses acorn (a pure-JS parser) to validate
+ * each script body without eval, blob URLs, or any dynamic import. Works in
+ * all environments including Tauri webviews with strict CSP — no tauri.conf.json
+ * changes are needed for the linter.
+ *
+ * The function signature is async for API compatibility with callers; the
+ * implementation is synchronous.
+ */
+export async function validateScriptBodiesAsync(
+  scripts: Array<{ name: string; body: string }>
+): Promise<ValidationError[]> {
+  const errors: ValidationError[] = [];
+  for (const s of scripts) {
+    if (!s.body || !s.body.trim()) continue;
+    const src = `async function __check(ctx){\n${s.body}\n}`;
+    try {
+      acorn.parse(src, { ecmaVersion: 2022, sourceType: "script" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push({ severity: "error", message: `Script "${s.name}": syntax error — ${msg}` });
+    }
+  }
+  return errors;
 }
 
 export function validateManifestCompleteness(

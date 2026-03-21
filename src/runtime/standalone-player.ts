@@ -1,6 +1,7 @@
 import type { GameConfig } from "../engine/core/types";
 import type { ScriptHandlerFn } from "../engine/scripting/ScriptRunner";
 import { bootRuntime } from "./launcherBoot";
+import { compileRawScript } from "./compileScript";
 
 interface PlayerGameData {
   config: GameConfig;
@@ -13,14 +14,13 @@ declare global {
   }
 }
 
-function compileScripts(
+async function compileScripts(
   bodies: Record<string, string>
-): Record<string, ScriptHandlerFn> {
+): Promise<Record<string, ScriptHandlerFn>> {
   const compiled: Record<string, ScriptHandlerFn> = {};
   for (const [name, body] of Object.entries(bodies)) {
     try {
-      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-      compiled[name] = new AsyncFunction("ctx", body) as ScriptHandlerFn;
+      compiled[name] = await compileRawScript(name, body);
     } catch (e) {
       console.error(`[Player] Failed to compile script "${name}":`, e);
     }
@@ -50,7 +50,7 @@ async function boot() {
   }
 
   const { config, scriptBodies } = gameData;
-  const scripts = compileScripts(scriptBodies);
+  const scripts = await compileScripts(scriptBodies);
 
   const mount = document.getElementById("canvas-wrap")?.parentElement
     ?? document.body;

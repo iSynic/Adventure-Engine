@@ -9,7 +9,7 @@ import {
   type PlayableExportOptions,
 } from "../export/exportPlayableBuild";
 import { validateProject } from "../export/validateProject";
-import { validateManifestCompleteness } from "../../shared/validateProject";
+import { validateManifestCompleteness, validateScriptBodiesAsync } from "../../shared/validateProject";
 import type { ValidationError, ValidationResult, ExportManifest } from "../../shared/exportSchema";
 import { EXPORT_SCHEMA_VERSION } from "../../shared/exportSchema";
 import TutorialBubble from "./TutorialBubble";
@@ -302,7 +302,10 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     setPendingWarnings(false);
 
     const result: ValidationResult = validateProject(project);
-    const allErrors = [...result.errors];
+    const syntaxErrors = await validateScriptBodiesAsync(
+      project.scripts.map((s) => ({ name: s.name, body: s.body }))
+    );
+    const allErrors = [...result.errors, ...syntaxErrors];
 
     const resolvedTitle = gameTitle.trim() || project.title;
     const manifest: ExportManifest = {

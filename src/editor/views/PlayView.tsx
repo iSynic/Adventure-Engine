@@ -101,48 +101,68 @@ export default function PlayView({ startRoomId }: PlayViewProps = {}) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const { config, scripts } = projectToConfig(project, { skipValidation: true });
-
-    const overrideRoom = startRoomId ?? state.testRoomId;
-    if (overrideRoom && config.rooms.some((r) => r.id === overrideRoom)) {
-      config.startingRoom = overrideRoom;
-    }
-
-    if (!config.startingRoom) {
-      setError("No starting room set. Go to Project Settings to set one.");
-      setLoading(false);
-      return;
-    }
-
+    let cancelled = false;
     let started = false;
-    bootGame({ canvas, config, scripts, storageProvider: getStorageProvider() })
-      .then((engine) => {
-        engineRef.current = engine;
-        started = true;
-        setLoading(false);
-        engine.ui.subscribe((s) => {
-          setUiState({ ...s });
-          refreshInventory();
-        });
-        engine.dialogueManager.subscribe((ds) => {
-          setDialogueActive(ds.active);
-          setDialogueSpeaker(ds.speakerName);
-          setDialogueText(ds.speakerText);
-          setDialogueChoices(ds.choices);
-          setDialoguePortrait(ds.speakerPortrait);
-          setChosenBranchIds(ds.chosenBranchIds);
-        });
-        refreshInventory();
-        engine.activateCurrentRoom().catch((e) => {
+
+    (async () => {
+      let config: import("../../engine/core/types").GameConfig;
+      let scripts: Record<string, import("../../engine/scripting/ScriptRunner").ScriptHandlerFn>;
+      try {
+        ({ config, scripts } = await projectToConfig(project, { skipValidation: true }));
+      } catch (e) {
+        if (!cancelled) {
           setError(String(e));
-        });
-      })
-      .catch((e) => {
-        setError(String(e));
+          setLoading(false);
+        }
+        return;
+      }
+      if (cancelled) return;
+
+      const overrideRoom = startRoomId ?? state.testRoomId;
+      if (overrideRoom && config.rooms.some((r) => r.id === overrideRoom)) {
+        config.startingRoom = overrideRoom;
+      }
+
+      if (!config.startingRoom) {
+        setError("No starting room set. Go to Project Settings to set one.");
         setLoading(false);
-      });
+        return;
+      }
+
+      bootGame({ canvas, config, scripts, storageProvider: getStorageProvider() })
+        .then((engine) => {
+          if (cancelled) {
+            engine.stop();
+            return;
+          }
+          engineRef.current = engine;
+          started = true;
+          setLoading(false);
+          engine.ui.subscribe((s) => {
+            setUiState({ ...s });
+            refreshInventory();
+          });
+          engine.dialogueManager.subscribe((ds) => {
+            setDialogueActive(ds.active);
+            setDialogueSpeaker(ds.speakerName);
+            setDialogueText(ds.speakerText);
+            setDialogueChoices(ds.choices);
+            setDialoguePortrait(ds.speakerPortrait);
+            setChosenBranchIds(ds.chosenBranchIds);
+          });
+          refreshInventory();
+          engine.activateCurrentRoom().catch((e) => {
+            setError(String(e));
+          });
+        })
+        .catch((e) => {
+          setError(String(e));
+          setLoading(false);
+        });
+    })();
 
     return () => {
+      cancelled = true;
       if (engineRef.current && started) {
         engineRef.current.stop();
         engineRef.current = null;

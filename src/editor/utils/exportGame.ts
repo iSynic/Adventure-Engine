@@ -38,8 +38,8 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9_.-]/g, "_");
 }
 
-function collectReferencedPaths(project: EditorProject): string[] {
-  const { config } = projectToConfig(project);
+async function collectReferencedPaths(project: EditorProject): Promise<string[]> {
+  const { config } = await projectToConfig(project);
   const paths: string[] = [];
 
   for (const room of config.rooms) {
@@ -124,7 +124,7 @@ export async function exportGame(
   settings: ExportSettings
 ): Promise<void> {
   const zip = new JSZip();
-  const allPaths = collectReferencedPaths(project);
+  const allPaths = await collectReferencedPaths(project);
   const playerJS = await fetchPlayerRuntime();
 
   if (settings.mode === "inline") {
@@ -189,7 +189,7 @@ export async function exportGame(
     const html = generatePlayerHTML(project, settings, assetFileMap, null, playerJS);
     zip.file("index.html", html);
 
-    const { config } = projectToConfig(project);
+    const { config } = await projectToConfig(project);
     const dataFolder = zip.folder("data")!;
     dataFolder.file("rooms.json", JSON.stringify(config.rooms, null, 2));
     dataFolder.file("actors.json", JSON.stringify(config.actors, null, 2));

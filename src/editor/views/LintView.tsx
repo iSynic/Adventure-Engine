@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useEditor } from "../store";
 import type { ValidationError } from "../../shared/exportSchema";
-import { validateProject } from "../../shared/validateProject";
+import { validateProject, validateScriptBodiesAsync } from "../../shared/validateProject";
 import type { EditorProject, EditorTab } from "../types";
 import TutorialBubble from "../components/TutorialBubble";
 
@@ -123,15 +123,20 @@ export default function LintView() {
   const [issues, setIssues] = useState<CategorizedIssue[]>([]);
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const lintVersionRef = useRef(0);
 
-  const runLint = useCallback(() => {
+  const runLint = useCallback(async () => {
     if (!project) return;
+    const version = ++lintVersionRef.current;
     const validatable = {
       ...project,
       scripts: project.scripts.map((s) => ({ name: s.name, body: s.body, steps: s.steps })),
     };
     const result = validateProject(validatable);
-    setIssues(result.errors.map((e) => categorizeIssue(e, project)));
+    const syntaxErrors = await validateScriptBodiesAsync(validatable.scripts);
+    if (version !== lintVersionRef.current) return;
+    const allErrors = [...result.errors, ...syntaxErrors];
+    setIssues(allErrors.map((e) => categorizeIssue(e, project)));
     setLastRun(new Date());
   }, [project]);
 

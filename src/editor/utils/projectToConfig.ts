@@ -2,6 +2,7 @@ import type { GameConfig, RoomDefinition, WalkboxDefinition, HotspotDefinition, 
 import type { EditorProject, EditorScript, EditorRoomDefinition, EditorDialogueTree, EditorActorDefinition, EditorObjectDefinition } from "../types";
 import type { ScriptHandlerFn } from "../../engine/scripting/ScriptRunner";
 import { compileVisualScript } from "../../engine/scripting/VisualScriptInterpreter";
+import { compileRawScript } from "../../runtime/compileScript";
 import { validateProject as runValidation } from "../../shared/validateProject";
 import type { ValidationResult } from "../../shared/exportSchema";
 import { resolveAssetUrl } from "./projectStorage";
@@ -21,10 +22,10 @@ export function validateProjectForExport(project: EditorProject): ValidationResu
   return runValidation(validatable);
 }
 
-export function projectToConfig(project: EditorProject, opts?: { skipValidation?: boolean }): {
+export async function projectToConfig(project: EditorProject, opts?: { skipValidation?: boolean }): Promise<{
   config: GameConfig;
   scripts: Record<string, ScriptHandlerFn>;
-} {
+}> {
   if (!opts?.skipValidation) {
     const result = validateProjectForExport(project);
     const criticalErrors = result.errors.filter((e) => e.severity === "error");
@@ -112,9 +113,7 @@ export function projectToConfig(project: EditorProject, opts?: { skipValidation?
       if (script.kind === "visual" && script.steps) {
         compiledScripts[script.name] = compileVisualScript(script.steps);
       } else {
-        const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-        const fn = new AsyncFunction("ctx", script.body) as ScriptHandlerFn;
-        compiledScripts[script.name] = fn;
+        compiledScripts[script.name] = await compileRawScript(script.name, script.body);
       }
     } catch (e) {
       console.error(`[Editor] Failed to compile script "${script.name}":`, e);

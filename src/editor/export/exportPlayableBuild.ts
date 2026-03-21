@@ -9,7 +9,7 @@ import type {
 import { EXPORT_SCHEMA_VERSION } from "../../shared/exportSchema";
 import { resolveDisplayConfig } from "../../shared/displayConfig";
 import { validateProject } from "./validateProject";
-import { validateManifestCompleteness } from "../../shared/validateProject";
+import { validateManifestCompleteness, validateScriptBodiesAsync } from "../../shared/validateProject";
 
 const RUNTIME_PATH = "playable-runtime/playable.js";
 
@@ -202,8 +202,15 @@ export async function exportPlayableBuild(
   options?: PlayableExportOptions
 ): Promise<PlayableExportResult> {
   const validation = validateProject(project);
-  if (!validation.valid) {
-    return { success: false, validation };
+  const syntaxErrors = await validateScriptBodiesAsync(
+    project.scripts.map((s) => ({ name: s.name, body: s.body }))
+  );
+  const mergedValidation: ValidationResult = {
+    valid: validation.valid && syntaxErrors.length === 0,
+    errors: [...validation.errors, ...syntaxErrors],
+  };
+  if (!mergedValidation.valid) {
+    return { success: false, validation: mergedValidation };
   }
 
   try {
