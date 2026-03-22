@@ -3,6 +3,9 @@ import {
   useContext,
   useReducer,
   useCallback,
+  useEffect,
+  useMemo,
+  useState,
   type ReactNode,
 } from "react";
 import type {
@@ -26,7 +29,9 @@ import {
   saveProject,
   deleteProject,
   setStorageProvider,
+  getStorageProvider,
 } from "./utils/projectStorage";
+import { toast } from "../hooks/use-toast";
 
 const UNDO_LIMIT = 50;
 
@@ -63,6 +68,82 @@ const initialState: EditorState = {
   _dragActive: false,
   _dragSnapshot: null,
 };
+
+function toProjectMeta(project: EditorProject) {
+  return {
+    id: project.id,
+    title: project.title,
+    created: project.created,
+    modified: project.modified,
+    roomCount: project.rooms.length,
+  };
+}
+
+function upsertProjectMeta(
+  projects: EditorState["projects"],
+  project: EditorProject
+): EditorState["projects"] {
+  const meta = toProjectMeta(project);
+  const existingIndex = projects.findIndex((entry) => entry.id === project.id);
+
+  if (existingIndex === -1) {
+    return [...projects, meta];
+  }
+
+  return projects.map((entry, index) =>
+    index === existingIndex ? meta : entry
+  );
+}
+
+type DesktopProviderOperationKind =
+  | "initialize"
+  | "preload-project"
+  | "save-project"
+  | "delete-project"
+  | "save-asset"
+  | "delete-asset"
+  | "save-game"
+  | "delete-save"
+  | "create-from-template";
+
+interface DesktopProviderOperationSnapshot {
+  id: number;
+  kind: DesktopProviderOperationKind;
+  target: string;
+  startedAt: number;
+}
+
+interface DesktopProviderDiagnostics {
+  providerName: string;
+  projectsRoot: string;
+  bundledProjectsRoot: string;
+  pendingOperations: DesktopProviderOperationSnapshot[];
+  projectCount: number;
+  saveBucketCount: number;
+  lastError: string | null;
+  lastSuccess: { kind: DesktopProviderOperationKind; target: string; timestamp: number } | null;
+}
+
+interface DesktopProviderEventDetail {
+  phase: "start" | "success" | "error";
+  operation: DesktopProviderOperationSnapshot;
+  diagnostics?: DesktopProviderDiagnostics | null;
+  message?: string;
+}
+
+interface DesktopAwareStorageProvider extends StorageProvider {
+  getDiagnostics?: () => DesktopProviderDiagnostics;
+}
+
+function isDesktopAwareStorageProvider(
+  provider: StorageProvider
+): provider is DesktopAwareStorageProvider {
+  return typeof (provider as DesktopAwareStorageProvider).getDiagnostics === "function";
+}
+
+function syncProjectsFromProvider(dispatch: React.Dispatch<EditorAction>, provider: StorageProvider): void {
+  dispatch({ type: "LOAD_PROJECTS", projects: provider.listProjectMetas() });
+}
 
 function applyDataAction(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -514,16 +595,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         _savedProjectRef: action.project,
         _dragActive: false,
         _dragSnapshot: null,
-        projects: [
-          ...state.projects,
-          {
-            id: action.project.id,
-            title: action.project.title,
-            created: action.project.created,
-            modified: action.project.modified,
-            roomCount: action.project.rooms.length,
-          },
-        ],
+        projects: upsertProjectMeta(state.projects, action.project),
       };
 
     case "OPEN_PROJECT":
@@ -625,6 +697,9 @@ interface EditorContextValue {
   selectedRoom: EditorRoomDefinition | null;
   canUndo: boolean;
   canRedo: boolean;
+  saveInFlight: boolean;
+  deleteInFlightIds: string[];
+  desktopDiagnostics: DesktopProviderDiagnostics | null;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -644,9 +719,76 @@ export function EditorProvider({
     ...initialState,
     projects: loadProjectMetas(),
   });
+  const [pendingSaveProjectId, setPendingSaveProjectId] = useState<string | null>(null);
+  const [pendingDeleteProjectIds, setPendingDeleteProjectIds] = useState<string[]>([]);
+  const [desktopDiagnostics, setDesktopDiagnostics] = useState<DesktopProviderDiagnostics | null>(() => {
+    const provider = getStorageProvider();
+    return isDesktopAwareStorageProvider(provider) ? provider.getDiagnostics?.() ?? null : null;
+  });
+
+  useEffect(() => {
+    const provider = getStorageProvider();
+    if (!isDesktopAwareStorageProvider(provider)) {
+      setDesktopDiagnostics(null);
+      return;
+    }
+
+    setDesktopDiagnostics(provider.getDiagnostics?.() ?? null);
+
+    function onDesktopProviderEvent(event: Event) {
+      const detail = (event as CustomEvent<DesktopProviderEventDetail>).detail;
+      if (!detail?.operation) return;
+
+      setDesktopDiagnostics(detail.diagnostics ?? provider.getDiagnostics?.() ?? null);
+
+      if (detail.phase === "start") {
+        return;
+      }
+
+      if (detail.operation.kind === "save-project" && pendingSaveProjectId === detail.operation.target) {
+        setPendingSaveProjectId(null);
+        if (detail.phase === "success") {
+          dispatch({ type: "MARK_SAVED" });
+        }
+      }
+
+      if (detail.operation.kind === "delete-project") {
+        setPendingDeleteProjectIds((ids) => ids.filter((id) => id !== detail.operation.target));
+      }
+
+      if (
+        detail.operation.kind === "save-project" ||
+        detail.operation.kind === "delete-project" ||
+        detail.operation.kind === "create-from-template"
+      ) {
+        syncProjectsFromProvider(dispatch, provider);
+      }
+
+      if (detail.phase === "error") {
+        toast({
+          title: "Desktop persistence error",
+          description: detail.message ?? `${detail.operation.kind} failed for ${detail.operation.target}.`,
+          variant: "destructive",
+        });
+      }
+    }
+
+    window.addEventListener("adventure:desktop-provider-event", onDesktopProviderEvent as EventListener);
+    return () => {
+      window.removeEventListener("adventure:desktop-provider-event", onDesktopProviderEvent as EventListener);
+    };
+  }, [dispatch, pendingSaveProjectId]);
 
   const saveCurrentProject = useCallback(() => {
     if (!state.currentProject) return;
+    const provider = getStorageProvider();
+    if (isDesktopAwareStorageProvider(provider)) {
+      setPendingSaveProjectId(state.currentProject.id);
+      setDesktopDiagnostics(provider.getDiagnostics?.() ?? null);
+      saveProject(state.currentProject);
+      return;
+    }
+
     saveProject(state.currentProject);
     dispatch({ type: "MARK_SAVED" });
   }, [state.currentProject]);
@@ -664,6 +806,11 @@ export function EditorProvider({
   }, []);
 
   const deleteProjectById = useCallback((id: string) => {
+    const provider = getStorageProvider();
+    if (isDesktopAwareStorageProvider(provider)) {
+      setPendingDeleteProjectIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
+      setDesktopDiagnostics(provider.getDiagnostics?.() ?? null);
+    }
     deleteProject(id);
     dispatch({ type: "DELETE_PROJECT", id });
   }, []);
@@ -675,6 +822,8 @@ export function EditorProvider({
 
   const canUndo = state.past.length > 0;
   const canRedo = state.future.length > 0;
+  const saveInFlight = !!(state.currentProject && pendingSaveProjectId === state.currentProject.id);
+  const deleteInFlightIds = useMemo(() => pendingDeleteProjectIds, [pendingDeleteProjectIds]);
 
   return (
     <EditorContext.Provider
@@ -688,6 +837,9 @@ export function EditorProvider({
         selectedRoom,
         canUndo,
         canRedo,
+        saveInFlight,
+        deleteInFlightIds,
+        desktopDiagnostics,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useEditor } from "../store";
 import {
   createBlankProject,
+  getStorageProvider,
   saveProject,
   loadProject,
   importProjectFromJson,
@@ -9,33 +10,118 @@ import {
 } from "../utils/projectStorage";
 import { createSampleProject } from "../utils/sampleProject";
 import DocsView from "./DocsView";
+import type { EditorProject } from "../types";
+import type { BundledTemplateMeta } from "../../shared/EditorStorageProvider";
+import { toast } from "../../hooks/use-toast";
+
+interface BundledTemplateProvider {
+  listBundledTemplates?: () => Promise<BundledTemplateMeta[]>;
+  createProjectFromBundledTemplate?: (templateId: string) => Promise<EditorProject>;
+}
+
+async function createProjectFromBundledTemplate(): Promise<EditorProject | null> {
+  const provider = getStorageProvider() as BundledTemplateProvider;
+  if (typeof provider.createProjectFromBundledTemplate !== "function") {
+    return null;
+  }
+
+  let templateId = "bork";
+  if (typeof provider.listBundledTemplates === "function") {
+    try {
+      const templates = await provider.listBundledTemplates();
+      const preferred = templates.find((template) => template.id === "bork") ?? templates[0];
+      if (preferred) {
+        templateId = preferred.id;
+      }
+    } catch (error) {
+      console.warn("[ProjectsView] Could not list bundled templates, defaulting to 'bork'.", error);
+    }
+  }
+
+  return provider.createProjectFromBundledTemplate(templateId);
+}
 
 export default function ProjectsView() {
-  const { state, dispatch, openProject, deleteProjectById } = useEditor();
+  const { state, dispatch, openProject, deleteProjectById, deleteInFlightIds } = useEditor();
   const [showNew, setShowNew] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [pendingAction, setPendingAction] = useState<null | "create" | "sample" | "import">(null);
 
-  function handleCreate() {
-    if (!newTitle.trim()) return;
-    const project = createBlankProject(newTitle.trim());
+  function finishProjectCreation(project: EditorProject) {
     saveProject(project);
     dispatch({ type: "CREATE_PROJECT", project });
-    setShowNew(false);
-    setNewTitle("");
   }
 
-  function handleLoadSample() {
-    const project = createSampleProject();
-    saveProject(project);
-    dispatch({ type: "CREATE_PROJECT", project });
+  function handleCreate() {
+    if (!newTitle.trim() || pendingAction) return;
+    setPendingAction("create");
+    try {
+      const project = createBlankProject(newTitle.trim());
+      finishProjectCreation(project);
+      setShowNew(false);
+      setNewTitle("");
+    } catch (error) {
+      toast({
+        title: "Could not create project",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleLoadSample() {
+    if (pendingAction) return;
+    setPendingAction("sample");
+    try {
+      const bundledProject = await createProjectFromBundledTemplate();
+      if (bundledProject) {
+        dispatch({ type: "CREATE_PROJECT", project: bundledProject });
+        return;
+      }
+    } catch (error) {
+      console.error("[ProjectsView] Failed to create bundled sample project:", error);
+      toast({
+        title: "Could not load sample",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+      setPendingAction(null);
+      return;
+    }
+
+    try {
+      const project = createSampleProject();
+      finishProjectCreation(project);
+    } catch (error) {
+      toast({
+        title: "Could not load sample",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function handleImport() {
+    if (pendingAction) return;
+    setPendingAction("import");
     const project = await importProjectFromJson();
-    if (project) {
-      saveProject(project);
-      dispatch({ type: "CREATE_PROJECT", project });
+    try {
+      if (project) {
+        finishProjectCreation(project);
+      }
+    } catch (error) {
+      toast({
+        title: "Could not import project",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -65,11 +151,11 @@ export default function ProjectsView() {
           <button className="btn btn-primary" onClick={() => setShowNew(true)}>
             + New Project
           </button>
-          <button className="btn btn-secondary" onClick={handleLoadSample}>
-            Load Sample
+          <button className="btn btn-secondary" onClick={handleLoadSample} disabled={pendingAction !== null}>
+            {pendingAction === "sample" ? "Loading Sample..." : "Load Sample"}
           </button>
-          <button className="btn btn-ghost" onClick={handleImport}>
-            Import JSON
+          <button className="btn btn-ghost" onClick={handleImport} disabled={pendingAction !== null}>
+            {pendingAction === "import" ? "Importing..." : "Import JSON"}
           </button>
           <button className="btn btn-ghost" onClick={() => setShowDocs(true)}>
             Docs
@@ -90,11 +176,12 @@ export default function ProjectsView() {
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             />
             <div className="modal-actions">
-              <button className="btn btn-primary" onClick={handleCreate}>
-                Create
+              <button className="btn btn-primary" onClick={handleCreate} disabled={pendingAction !== null}>
+                {pendingAction === "create" ? "Creating..." : "Create"}
               </button>
               <button
                 className="btn btn-ghost"
+                disabled={pendingAction !== null}
                 onClick={() => setShowNew(false)}
               >
                 Cancel
@@ -148,10 +235,11 @@ export default function ProjectsView() {
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
+                  disabled={deleteInFlightIds.includes(meta.id)}
                   onClick={() => handleDelete(meta.id)}
                   title="Delete project"
                 >
-                  Delete
+                  {deleteInFlightIds.includes(meta.id) ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

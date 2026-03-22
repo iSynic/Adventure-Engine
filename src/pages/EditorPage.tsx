@@ -4,6 +4,7 @@ import { TutorialProvider } from "../editor/context/TutorialContext";
 import ProjectsView from "../editor/views/ProjectsView";
 import PlayView from "../editor/views/PlayView";
 import EditorLayout from "../editor/components/layout/EditorLayout";
+import { Toaster } from "../components/ui/toaster";
 
 function EditorRoot() {
   const { state } = useEditor();
@@ -28,6 +29,7 @@ export default function EditorPage({
     <TutorialProvider>
       <EditorProvider storageProvider={storageProvider}>
         <EditorRoot />
+        <Toaster />
       </EditorProvider>
     </TutorialProvider>
   );

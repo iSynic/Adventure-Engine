@@ -1,5 +1,11 @@
 import type { EditorProject, EditorProjectMeta } from "../editor/types";
 
+export interface BundledTemplateMeta {
+  id: string;
+  title: string;
+  description?: string;
+}
+
 /** Editor-only storage: project CRUD and asset management. */
 export interface EditorStorageProvider {
   listProjectMetas(): EditorProjectMeta[];
@@ -19,4 +25,12 @@ export interface EditorStorageProvider {
   deleteAssetData(projectId: string, assetId: string): void;
 
   listAssetIds(projectId: string): string[];
+
+  /**
+   * Optional desktop-shell hooks for bundled starter/sample projects.
+   * Web/local-storage hosts can omit these and rely on in-app fallbacks.
+   */
+  listBundledTemplates?(): Promise<BundledTemplateMeta[]>;
+
+  createProjectFromBundledTemplate?(templateId: string): Promise<EditorProject>;
 }

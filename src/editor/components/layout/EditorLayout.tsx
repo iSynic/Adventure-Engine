@@ -100,7 +100,7 @@ const TABS: {
 ];
 
 export default function EditorLayout() {
-  const { state, dispatch, saveCurrentProject, closeProject, canUndo, canRedo } = useEditor();
+  const { state, dispatch, saveCurrentProject, closeProject, canUndo, canRedo, saveInFlight, desktopDiagnostics } = useEditor();
   const { enabled: tutorialEnabled, toggle: toggleTutorial } = useTutorial();
   const [showDocs, setShowDocs] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -208,10 +208,24 @@ export default function EditorLayout() {
             description="Save your project to browser storage. You can also press Ctrl+S (Cmd+S on Mac) to quick-save at any time."
             preferSide="below"
           >
-            <button className="btn btn-ghost btn-sm" onClick={saveCurrentProject} title="Save (Ctrl+S)">
-              Save
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={saveCurrentProject}
+              title={saveInFlight ? "Save is currently being written to disk" : "Save (Ctrl+S)"}
+              disabled={saveInFlight}
+            >
+              {saveInFlight ? "Saving..." : "Save"}
             </button>
           </TutorialBubble>
+          {desktopDiagnostics?.projectsRoot && (
+            <span
+              className="btn btn-ghost btn-sm"
+              title={`Desktop projects root: ${desktopDiagnostics.projectsRoot}`}
+              style={{ cursor: "default", opacity: 0.8 }}
+            >
+              Desktop
+            </span>
+          )}
           {state.selectedRoomId && (
             <TutorialBubble
               title="Test Room"
